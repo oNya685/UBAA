@@ -47,8 +47,9 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
 
   private val log = LoggerFactory.getLogger(AuthService::class.java)
   private val GENERIC_LOGIN_ERROR = "出了点问题，请检查用户名和密码，或稍后重试"
-  internal var derivedClientFactory: DerivedClientFactory =
-    DerivedClientFactory { baseClient -> ConfiguredDerivedClientHandle(baseClient) }
+  internal var derivedClientFactory: DerivedClientFactory = DerivedClientFactory { baseClient ->
+    ConfiguredDerivedClientHandle(baseClient)
+  }
 
   /** 统一抛出登录失败异常。 */
   private fun failLogin(reason: String? = null): Nothing {
@@ -117,12 +118,11 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
           val loginSubmitResponse =
                   noRedirectClient.post(LOGIN_URL) { setBody(FormDataContent(loginFormParameters)) }
 
-          followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient, client)
+          followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient)
         } else {
           // 标准流程：先拉取登录页获取 execution
           val loginPageResponse = noRedirectClient.get(LOGIN_URL)
-          if (
-                  !loginPageResponse.status.isSuccess() &&
+          if (!loginPageResponse.status.isSuccess() &&
                           loginPageResponse.status != HttpStatusCode.Found
           ) {
             failLogin("load login page status=" + loginPageResponse.status)
@@ -143,21 +143,24 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
                           "data:image/jpeg;base64," +
                                   java.util.Base64.getEncoder().encodeToString(it)
                         }
-                throw CaptchaRequiredException(captchaInfo.copy(base64Image = base64Image), execution)
+                throw CaptchaRequiredException(
+                        captchaInfo.copy(base64Image = base64Image),
+                        execution
+                )
               }
               val loginFormParameters = CasParser.buildCaptchaLoginParameters(request)
               val loginSubmitResponse =
                       noRedirectClient.post(LOGIN_URL) {
                         setBody(FormDataContent(loginFormParameters))
                       }
-              followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient, client)
+              followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient)
             } else {
               val loginFormParameters = CasParser.buildCasLoginParameters(loginPageHtml, request)
               val loginSubmitResponse =
                       noRedirectClient.post(LOGIN_URL) {
                         setBody(FormDataContent(loginFormParameters))
                       }
-              followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient, client)
+              followRedirectsAndCheckError(loginSubmitResponse, noRedirectClient)
             }
           }
         }
@@ -187,14 +190,13 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
       if (!committed) {
         sessionCandidate?.let {
           log.debug("Disposing incomplete session candidate for user: {}", it.username)
-          runCatching { sessionManager.disposeSessionCandidate(it) }
-            .onFailure { disposeError ->
-              log.warn(
-                "Failed to dispose incomplete session candidate for user: {}",
-                it.username,
-                disposeError,
-              )
-            }
+          runCatching { sessionManager.disposeSessionCandidate(it) }.onFailure { disposeError ->
+            log.warn(
+                    "Failed to dispose incomplete session candidate for user: {}",
+                    it.username,
+                    disposeError,
+            )
+          }
         }
       }
     }
@@ -244,9 +246,11 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
           }
 
           if (userData != null && !userData.schoolid.isNullOrBlank()) {
-            val sessionCandidate = sessionManager.promotePreLoginSession(clientId, userData.schoolid)
+            val sessionCandidate =
+                    sessionManager.promotePreLoginSession(clientId, userData.schoolid)
             if (sessionCandidate != null) {
-              val sessionWithToken = sessionManager.commitSessionWithToken(sessionCandidate, userData)
+              val sessionWithToken =
+                      sessionManager.commitSessionWithToken(sessionCandidate, userData)
               return@withNoRedirectClient LoginPreloadResponse(
                       captchaRequired = false,
                       clientId = clientId,
