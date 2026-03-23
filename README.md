@@ -22,7 +22,7 @@
 *   **🌐 Web**: 基于 Wasm/JS 的现代网页应用，无需安装即可使用。
 
 ### 🎓 智慧教务
-*   **🔐 统一认证**: 无缝集成 BUAA CAS 统一身份认证，支持验证码自动处理与会话保持。
+*   **🔐 统一认证**: 无缝集成 BUAA CAS 统一身份认证，支持验证码处理与服务端会话保持。
 *   **📅 智能课表**: 实时同步学期课表，支持周次切换与详情查看。
 *   **📝 考务助手**: 考试安排一键查询，不再错过重要考试。
 *   **🏛️ 空闲教室**: 快速查找全校可用自习教室。
@@ -78,10 +78,15 @@ cp .env.sample .env
 
 | 配置项         | 默认值                  | 说明                           |
 | :------------- | :---------------------- | :----------------------------- |
-| `API_ENDPOINT` | `http://localhost:5432` | 客户端连接的后端地址           |
-| `SERVER_PORT`  | `5432`                  | 服务端监听端口                 |
-| `JWT_SECRET`   | *(需修改)*              | 用于签名用户 Token 的密钥      |
-| `USE_VPN`      | `false`                 | 是否通过 WebVPN 代理访问校内网 |
+| `API_ENDPOINT` | `http://localhost:5432` | 客户端连接的后端地址 |
+| `SERVER_PORT` | `5432` | 服务端监听端口 |
+| `SERVER_BIND_HOST` | `0.0.0.0` | 服务端绑定地址 |
+| `JWT_SECRET` | *(需修改)* | 用于签名 access token 的密钥 |
+| `USE_VPN` | `false` | 是否通过 WebVPN 代理访问校内网 |
+| `ACCESS_TOKEN_TTL_MINUTES` | `30` | access token 有效期 |
+| `REFRESH_TOKEN_TTL_DAYS` | `7` | refresh token 有效期 |
+| `SESSION_TTL_DAYS` | `7` | Redis 会话与 Cookie 有效期 |
+| `REDIS_URI` | `redis://localhost:6379` | Redis 会话持久化地址 |
 
 ---
 

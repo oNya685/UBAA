@@ -2,10 +2,10 @@ package cn.edu.ubaa.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cn.edu.ubaa.api.AuthTokensStore
 import cn.edu.ubaa.api.AuthService
 import cn.edu.ubaa.api.CaptchaRequiredClientException
 import cn.edu.ubaa.api.CredentialStore
-import cn.edu.ubaa.api.TokenStore
 import cn.edu.ubaa.api.UserService
 import cn.edu.ubaa.model.dto.CaptchaInfo
 import cn.edu.ubaa.model.dto.UserData
@@ -85,14 +85,14 @@ class AuthViewModel : ViewModel() {
       authService
           .preloadLoginState()
           .onSuccess { response ->
-            if (response.token != null && response.userData != null) {
+            if (response.accessToken != null && response.userData != null) {
               // SSO 已登录，执行自动登录逻辑
               _uiState.value =
                   _uiState.value.copy(
                       isPreloading = false,
                       isLoggedIn = true,
                       userData = response.userData,
-                      token = response.token,
+                      accessToken = response.accessToken,
                   )
               _loginForm.value = LoginFormState()
               loadUserInfo()
@@ -160,7 +160,7 @@ class AuthViewModel : ViewModel() {
                     isLoggedIn = true,
                     isLoading = false,
                     userData = loginResponse.user,
-                    token = loginResponse.token,
+                    accessToken = loginResponse.accessToken,
                 )
             CredentialStore.setRememberPassword(form.rememberPassword)
             CredentialStore.setAutoLogin(form.autoLogin)
@@ -188,13 +188,14 @@ class AuthViewModel : ViewModel() {
   /** 应用全局初始化入口。 用于检查本地 Token 是否有效，若失效则根据设置决定跳转登录页或尝试自动登录。 */
   fun initializeApp() {
     viewModelScope.launch {
-      val storedToken = TokenStore.get()
-      if (storedToken.isNullOrBlank()) {
+      val storedTokens = AuthTokensStore.get()
+      val storedAccessToken = storedTokens?.accessToken
+      if (storedAccessToken.isNullOrBlank()) {
         if (CredentialStore.isAutoLogin()) login() else preloadLoginState()
         return@launch
       }
 
-      authService.applyStoredToken()
+      authService.applyStoredTokens()
       _uiState.value = _uiState.value.copy(isLoading = true)
       authService
           .getAuthStatus()
@@ -204,13 +205,13 @@ class AuthViewModel : ViewModel() {
                     isLoggedIn = true,
                     isLoading = false,
                     userData = status.user,
-                    token = storedToken,
+                    accessToken = storedAccessToken,
                 )
             loadUserInfo()
           }
           .onFailure {
             _uiState.value = _uiState.value.copy(isLoading = false)
-            TokenStore.clear()
+            AuthTokensStore.clear()
             if (CredentialStore.isAutoLogin()) login() else preloadLoginState()
           }
     }
@@ -257,7 +258,7 @@ data class AuthUiState(
     val isLoggedIn: Boolean = false,
     val userData: UserData? = null,
     val userInfo: UserInfo? = null,
-    val token: String? = null,
+    val accessToken: String? = null,
     val error: String? = null,
     val captchaRequired: Boolean = false,
     val captchaInfo: CaptchaInfo? = null,

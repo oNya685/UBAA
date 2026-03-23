@@ -24,7 +24,7 @@ class SpocApiTest {
 
   @BeforeTest
   fun setup() {
-    TokenStore.settings = MapSettings()
+    AuthTokensStore.settings = MapSettings()
     ClientIdStore.settings = MapSettings()
   }
 

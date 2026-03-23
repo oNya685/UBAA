@@ -32,7 +32,7 @@ class RedisCookieStorage(
 ) : ManagedCookieStorage {
   private val mutex = Mutex()
   @Volatile private var key = storageKey(initialSubject)
-  private val keyTtlSeconds = 1800L
+  private val keyTtlSeconds = AuthConfig.sessionTtl.seconds.coerceAtLeast(1L)
   private var writeThrough = false
 
   // 内存缓存：field -> serializedCookie。null 表示尚未从 Redis 加载。

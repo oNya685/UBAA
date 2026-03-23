@@ -1,6 +1,7 @@
 package cn.edu.ubaa
 
 import cn.edu.ubaa.auth.GlobalSessionManager
+import cn.edu.ubaa.auth.GlobalRefreshTokenService
 import cn.edu.ubaa.auth.JwtAuth
 import cn.edu.ubaa.auth.JwtAuth.configureJwtAuth
 import cn.edu.ubaa.auth.authRouting
@@ -119,6 +120,7 @@ fun Application.module() {
     bykcService.clearCache()
     spocService.clearCache()
     sessionManager.close()
+    GlobalRefreshTokenService.instance.close()
   }
 
   routing {

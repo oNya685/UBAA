@@ -3,6 +3,7 @@ package cn.edu.ubaa.auth
 import io.ktor.http.Cookie
 import io.ktor.http.Url
 import io.ktor.util.date.GMTDate
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemorySessionStore : SessionPersistence {
@@ -130,5 +131,59 @@ class TrackingCookieStorageFactory : InMemoryCookieStorageFactory() {
       events += "close"
       super.close()
     }
+  }
+}
+
+class InMemoryRefreshTokenStore : RefreshTokenStore {
+  private val records = ConcurrentHashMap<String, RefreshTokenRecord>()
+
+  override suspend fun saveToken(
+      username: String,
+      token: String,
+      issuedAt: Instant,
+      expiresAt: Instant,
+  ) {
+    records[username] =
+        RefreshTokenRecord(
+            username = username,
+            tokenHash = token,
+            issuedAt = issuedAt,
+            expiresAt = expiresAt,
+        )
+  }
+
+  override suspend fun findToken(token: String): RefreshTokenRecord? {
+    val now = Instant.now()
+    return records.values.firstOrNull { it.tokenHash == token && it.expiresAt.isAfter(now) }
+  }
+
+  override suspend fun rotateToken(
+      username: String,
+      oldToken: String,
+      newToken: String,
+      issuedAt: Instant,
+      expiresAt: Instant,
+  ): Boolean {
+    val current = records[username] ?: return false
+    if (current.tokenHash != oldToken || !current.expiresAt.isAfter(Instant.now())) {
+      records.remove(username)
+      return false
+    }
+    records[username] =
+        RefreshTokenRecord(
+            username = username,
+            tokenHash = newToken,
+            issuedAt = issuedAt,
+            expiresAt = expiresAt,
+        )
+    return true
+  }
+
+  override suspend fun deleteByUsername(username: String) {
+    records.remove(username)
+  }
+
+  override fun close() {
+    records.clear()
   }
 }

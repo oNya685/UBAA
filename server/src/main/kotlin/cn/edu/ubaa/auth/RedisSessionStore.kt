@@ -12,13 +12,16 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Redis 会话持久化仓库。 负责将会话元数据（用户身份、认证时间、活跃时间）保存到 Redis，以便服务重启后能恢复活跃会话。 */
-class RedisSessionStore(private val redisUri: String) : SessionPersistence {
+class RedisSessionStore(
+    private val redisUri: String,
+    sessionTtl: java.time.Duration = AuthConfig.sessionTtl,
+) : SessionPersistence {
   private val mutexes = ConcurrentHashMap<String, Mutex>()
   private val client: RedisClient by lazy { RedisClient.create(redisUri) }
   private val connection: StatefulRedisConnection<String, String> by lazy { client.connect() }
   private val commands: RedisCommands<String, String> by lazy { connection.sync() }
   private val keyPrefix = "session:"
-  private val sessionTtl = 1800L
+  private val sessionTtl = sessionTtl.seconds.coerceAtLeast(1L)
 
   data class SessionRecord(
       val userData: UserData,

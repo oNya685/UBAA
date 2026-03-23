@@ -4,6 +4,7 @@ import cn.edu.ubaa.api.SessionStatusResponse
 import cn.edu.ubaa.auth.JwtAuth.getUserSession
 import cn.edu.ubaa.model.dto.CaptchaRequiredResponse
 import cn.edu.ubaa.model.dto.LoginRequest
+import cn.edu.ubaa.model.dto.TokenRefreshRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -57,7 +58,7 @@ fun Route.authRouting() {
       try {
         val request = call.receive<LoginRequest>()
         application.log.info("Login attempt for user: {}", request.username)
-        val loginResponse = authService.loginWithToken(request)
+        val loginResponse = authService.login(request)
         application.log.info("Login successful for user: {}", request.username)
         call.respond(HttpStatusCode.OK, loginResponse)
       } catch (e: ContentTransformationException) {
@@ -77,6 +78,37 @@ fun Route.authRouting() {
         )
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during login.", e)
+        call.respond(
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
+        )
+      }
+    }
+
+    /** POST /api/v1/auth/refresh 使用 refresh token 换取新的 token 对。 */
+    post("/refresh") {
+      try {
+        val request = call.receive<TokenRefreshRequest>()
+        val refreshResponse = authService.refreshTokens(request.refreshToken)
+        if (refreshResponse != null) {
+          call.respond(HttpStatusCode.OK, refreshResponse)
+        } else {
+          call.respond(
+              HttpStatusCode.Unauthorized,
+              ErrorResponse(ErrorDetails("invalid_refresh_token", "Invalid or expired refresh token")),
+          )
+        }
+      } catch (e: ContentTransformationException) {
+        call.respond(
+            HttpStatusCode.BadRequest,
+            ErrorResponse(
+                ErrorDetails("invalid_request", "Invalid request body: refreshToken is required")
+            ),
+        )
+      } catch (e: Exception) {
+        application.log.error("An unexpected error occurred during token refresh.", e)
         call.respond(
             HttpStatusCode.InternalServerError,
             ErrorResponse(

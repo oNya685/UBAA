@@ -3,9 +3,9 @@ package cn.edu.ubaa.auth
 import cn.edu.ubaa.model.dto.LoginPreloadResponse
 import cn.edu.ubaa.model.dto.LoginRequest
 import cn.edu.ubaa.model.dto.LoginResponse
+import cn.edu.ubaa.model.dto.TokenRefreshResponse
 import cn.edu.ubaa.model.dto.UserData
 import cn.edu.ubaa.model.dto.UserInfoResponse
-import cn.edu.ubaa.utils.JwtUtil
 import cn.edu.ubaa.utils.VpnCipher
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
@@ -13,7 +13,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.time.Duration
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.decodeFromString
@@ -25,7 +24,10 @@ import org.slf4j.LoggerFactory
  *
  * @property sessionManager 负责隔离用户会话和存储 Cookie 的管理器。
  */
-class AuthService(private val sessionManager: SessionManager = GlobalSessionManager.instance) {
+class AuthService(
+    private val sessionManager: SessionManager = GlobalSessionManager.instance,
+    private val refreshTokenService: RefreshTokenService = GlobalRefreshTokenService.instance,
+) {
 
   internal fun interface DerivedClientFactory {
     fun create(baseClient: HttpClient): DerivedClientHandle
@@ -58,15 +60,15 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
   }
 
   /**
-   * 执行登录流程并返回用户信息及 JWT 令牌。 支持从 preload 会话升级，或直接启动新会话。
+   * 执行登录流程并返回用户信息及访问令牌对。 支持从 preload 会话升级，或直接启动新会话。
    *
    * @param request 包含凭据和环境信息的登录请求。
    * @return 登录结果 LoginResponse。
    * @throws LoginException 凭据错误。
    * @throws CaptchaRequiredException 需提供验证码。
    */
-  suspend fun loginWithToken(request: LoginRequest): LoginResponse {
-    log.info("Starting login process with JWT for user: {}", request.username)
+  suspend fun login(request: LoginRequest): LoginResponse {
+    log.info("Starting login process for user: {}", request.username)
 
     val hasClientId = !request.clientId.isNullOrBlank()
     val hasExecution = !request.execution.isNullOrBlank()
@@ -77,8 +79,7 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
           existingSession ->
         val cachedUser = runCatching { verifySession(existingSession.client) }.getOrNull()
         if (cachedUser != null) {
-          val newToken = JwtUtil.generateToken(request.username, Duration.ofMinutes(30))
-          return LoginResponse(cachedUser, newToken)
+          return refreshTokenService.issueLoginTokens(cachedUser)
         }
         sessionManager.invalidateSession(request.username)
       }
@@ -177,9 +178,9 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
       }
 
       if (userData != null) {
-        val sessionWithToken = sessionManager.commitSessionWithToken(activeCandidate, userData)
+        sessionManager.commitSession(activeCandidate, userData)
         committed = true
-        return LoginResponse(userData, sessionWithToken.jwtToken)
+        return refreshTokenService.issueLoginTokens(userData)
       }
       failLogin("session verification failed")
     } finally {
@@ -208,8 +209,9 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
       } catch (e: Exception) {
         log.warn("Error calling SSO logout: {}", e.message)
       }
-      sessionManager.invalidateSession(username)
     }
+    refreshTokenService.invalidate(username)
+    sessionManager.invalidateSession(username)
   }
 
   /**
@@ -246,12 +248,15 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
             val sessionCandidate =
                 sessionManager.promotePreLoginSession(clientId, userData.schoolid)
             if (sessionCandidate != null) {
-              val sessionWithToken =
-                  sessionManager.commitSessionWithToken(sessionCandidate, userData)
+              sessionManager.commitSession(sessionCandidate, userData)
+              val tokenResponse = refreshTokenService.issueTokens(userData.schoolid)
               return@withNoRedirectClient LoginPreloadResponse(
                   captchaRequired = false,
                   clientId = clientId,
-                  token = sessionWithToken.jwtToken,
+                  accessToken = tokenResponse.accessToken,
+                  refreshToken = tokenResponse.refreshToken,
+                  accessTokenExpiresAt = tokenResponse.accessTokenExpiresAt,
+                  refreshTokenExpiresAt = tokenResponse.refreshTokenExpiresAt,
                   userData = userData,
               )
             }
@@ -351,6 +356,9 @@ class AuthService(private val sessionManager: SessionManager = GlobalSessionMana
       null
     }
   }
+
+  suspend fun refreshTokens(refreshToken: String): TokenRefreshResponse? =
+      refreshTokenService.refreshTokens(refreshToken, sessionManager)
 
   /**
    * 跟随 SSO 流程中的所有重定向，并检测是否存在错误提示或依然停留在登录页。

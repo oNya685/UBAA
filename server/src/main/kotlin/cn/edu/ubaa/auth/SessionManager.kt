@@ -2,7 +2,6 @@ package cn.edu.ubaa.auth
 
 import cn.edu.ubaa.model.dto.UserData
 import cn.edu.ubaa.utils.JwtUtil
-import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -64,10 +63,10 @@ interface ManagedCookieStorageFactory {
 
 /** 会话管理器。 负责隔离不同用户的 HttpClient 实例、Cookie 存储，以及管理 JWT 与用户会话之间的映射关系。 支持会话持久化到 Redis，实现重启后的会话恢复。 */
 class SessionManager(
-    private val sessionTtl: Duration = Duration.ofMinutes(30),
-    private val redisUri: String = DEFAULT_REDIS_URI,
+    private val sessionTtl: Duration = AuthConfig.sessionTtl,
+    private val redisUri: String = AuthConfig.redisUri,
     private val activityPersistInterval: Duration = Duration.ofSeconds(60),
-    private val sessionStore: SessionPersistence = RedisSessionStore(redisUri),
+    private val sessionStore: SessionPersistence = RedisSessionStore(redisUri, sessionTtl),
     private val cookieStorageFactory: ManagedCookieStorageFactory =
         RedisCookieStorageFactory(redisUri),
     private val clientFactory: (CookiesStorage) -> HttpClient = ::buildManagedClient,
@@ -113,9 +112,6 @@ class SessionManager(
 
     fun lastActivity(): Instant = lastActivity
   }
-
-  /** 包含会话对象和关联 JWT 的组合。 */
-  data class SessionWithToken(val session: UserSession, val jwtToken: String)
 
   /** 预登录会话：用于 preload 阶段，此时用户尚未输入凭据，通过 clientId 标识。 */
   data class PreLoginCandidate(
@@ -170,10 +166,10 @@ class SessionManager(
     return SessionCandidate(username, client, cookieStorage)
   }
 
-  suspend fun commitSessionWithToken(
+  suspend fun commitSession(
       candidate: SessionCandidate,
       userData: UserData,
-  ): SessionWithToken {
+  ): UserSession {
     // 登录期间 Cookie 只缓存在内存中，此处批量写回 Redis
     candidate.cookieStorage.flush()
     candidate.cookieStorage.setWriteThrough(true)
@@ -187,7 +183,6 @@ class SessionManager(
             authenticatedAt = Instant.now(),
         )
 
-    val jwtToken = JwtUtil.generateToken(candidate.username, sessionTtl)
     sessions.compute(candidate.username) { _, previous ->
       previous?.client?.close()
       closeCookieStorage(previous?.cookieStorage)
@@ -201,7 +196,7 @@ class SessionManager(
         lastActivity = newSession.lastActivity(),
     )
 
-    return SessionWithToken(newSession, jwtToken)
+    return newSession
   }
 
   suspend fun getSession(
@@ -383,13 +378,6 @@ class SessionManager(
   private fun preLoginSubject(clientId: String): String = "prelogin_$clientId"
 
   internal fun restoreMutexCountForTesting(): Int = restoreMutexes.size
-
-  companion object {
-    private val dotenv = dotenv { ignoreIfMissing = true }
-
-    private val DEFAULT_REDIS_URI: String =
-        dotenv["REDIS_URI"] ?: System.getenv("REDIS_URI") ?: "redis://localhost:6379"
-  }
 }
 
 /** 全局会话管理器单例。 */

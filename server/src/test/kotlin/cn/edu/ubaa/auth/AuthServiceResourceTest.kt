@@ -164,7 +164,7 @@ class AuthServiceResourceTest {
     try {
       val candidate = firstManager.prepareSession("persistent-user")
       candidate.cookieStorage.addCookie(requestUrl, Cookie("initial", "v1"))
-      firstManager.commitSessionWithToken(candidate, userData)
+      firstManager.commitSession(candidate, userData)
 
       val active =
           firstManager.getSession("persistent-user", SessionManager.SessionAccess.READ_ONLY)

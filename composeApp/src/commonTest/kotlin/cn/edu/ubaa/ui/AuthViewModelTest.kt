@@ -16,7 +16,7 @@ class AuthViewModelTest {
     assertFalse(initialUiState.isLoggedIn)
     assertNull(initialUiState.userData)
     assertNull(initialUiState.userInfo)
-    assertNull(initialUiState.token)
+    assertNull(initialUiState.accessToken)
     assertNull(initialUiState.error)
   }
 
@@ -38,14 +38,19 @@ class AuthViewModelTest {
   @Test
   fun testAuthUiStateUpdates() {
     val userData = UserData(name = "Test User", schoolid = "12345")
-    val token = "test_jwt_token"
+    val accessToken = "test_access_token"
 
     val loggedInState =
-        AuthUiState(isLoading = false, isLoggedIn = true, userData = userData, token = token)
+        AuthUiState(
+            isLoading = false,
+            isLoggedIn = true,
+            userData = userData,
+            accessToken = accessToken,
+        )
 
     assertTrue(loggedInState.isLoggedIn)
     assertEquals(userData, loggedInState.userData)
-    assertEquals(token, loggedInState.token)
+    assertEquals(accessToken, loggedInState.accessToken)
     assertFalse(loggedInState.isLoading)
   }
 
@@ -66,7 +71,7 @@ class AuthViewModelTest {
             isLoading = false,
             isLoggedIn = true,
             userData = UserData("Test User", "12345"),
-            token = "test_token",
+            accessToken = "test_access_token",
         )
 
     // After logout, state should be reset
@@ -74,7 +79,7 @@ class AuthViewModelTest {
 
     assertFalse(loggedOutState.isLoggedIn)
     assertNull(loggedOutState.userData)
-    assertNull(loggedOutState.token)
+    assertNull(loggedOutState.accessToken)
     assertFalse(loggedOutState.isLoading)
   }
 }
