@@ -1,6 +1,7 @@
 package cn.edu.ubaa.user
 
 import cn.edu.ubaa.auth.GlobalSessionManager
+import cn.edu.ubaa.auth.LoginException
 import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.model.dto.UserInfo
 import cn.edu.ubaa.model.dto.UserInfoResponse
@@ -15,8 +16,8 @@ import org.slf4j.LoggerFactory
 
 /** 用户信息服务。 负责从用户中心 (UC) 获取详细的个人档案数据。 */
 class UserService(
-  private val sessionManager: SessionManager = GlobalSessionManager.instance,
-  private val json: Json = Json { ignoreUnknownKeys = true },
+    private val sessionManager: SessionManager = GlobalSessionManager.instance,
+    private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
   private val log = LoggerFactory.getLogger(UserService::class.java)
 
@@ -26,15 +27,19 @@ class UserService(
     val response = session.getUserInfo()
     val body = response.bodyAsText()
 
+    if (isUcSessionExpired(response, body)) {
+      sessionManager.invalidateSession(username)
+      throw LoginException("UC session expired")
+    }
     if (response.status != HttpStatusCode.OK)
-      throw UserInfoException("Fetch failed: ${response.status}")
+        throw UserInfoException("Fetch failed: ${response.status}")
 
     val resp =
-      try {
-        json.decodeFromString<UserInfoResponse>(body)
-      } catch (_: Exception) {
-        throw UserInfoException("Parse failed")
-      }
+        try {
+          json.decodeFromString<UserInfoResponse>(body)
+        } catch (_: Exception) {
+          throw UserInfoException("Parse failed")
+        }
     val data = resp.data
     if (resp.code != 0 || data == null) throw UserInfoException("Error code: ${resp.code}")
 
@@ -43,6 +48,17 @@ class UserService(
 
   private suspend fun SessionManager.UserSession.getUserInfo(): HttpResponse {
     return client.get(VpnCipher.toVpnUrl("https://uc.buaa.edu.cn/api/uc/userinfo"))
+  }
+
+  private fun isUcSessionExpired(response: HttpResponse, body: String): Boolean {
+    if (response.status == HttpStatusCode.Unauthorized) return true
+    if (response.call.request.url.toString().contains("sso.buaa.edu.cn", ignoreCase = true))
+        return true
+    val trimmed = body.trimStart()
+    return trimmed.startsWith("<!DOCTYPE html", ignoreCase = true) ||
+        trimmed.startsWith("<html", ignoreCase = true) ||
+        body.contains("input name=\"execution\"") ||
+        body.contains("统一身份认证", ignoreCase = true)
   }
 }
 

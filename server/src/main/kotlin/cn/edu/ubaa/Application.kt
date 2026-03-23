@@ -1,11 +1,14 @@
 package cn.edu.ubaa
 
+import cn.edu.ubaa.auth.GlobalRefreshTokenService
 import cn.edu.ubaa.auth.GlobalSessionManager
 import cn.edu.ubaa.auth.JwtAuth
 import cn.edu.ubaa.auth.JwtAuth.configureJwtAuth
 import cn.edu.ubaa.auth.authRouting
 import cn.edu.ubaa.bykc.GlobalBykcService
 import cn.edu.ubaa.bykc.bykcRouting
+import cn.edu.ubaa.cgyy.GlobalCgyyService
+import cn.edu.ubaa.cgyy.cgyyRouting
 import cn.edu.ubaa.classroom.classroomRouting
 import cn.edu.ubaa.evaluation.evaluationRouting
 import cn.edu.ubaa.exam.examRouting
@@ -51,7 +54,7 @@ fun main() {
   log.info("Starting UBAA Server on $serverHost:$serverPort...")
 
   embeddedServer(Netty, port = serverPort, host = serverHost, module = Application::module)
-    .start(wait = true)
+      .start(wait = true)
 }
 
 val log = LoggerFactory.getLogger("Application")
@@ -82,8 +85,9 @@ fun Application.module() {
 
   val sessionManager = GlobalSessionManager.instance
   val bykcService = GlobalBykcService.instance
+  val cgyyService = GlobalCgyyService.instance
   val spocService = GlobalSpocService.instance
-  registerPerformanceGauges(sessionManager, bykcService, spocService)
+  registerPerformanceGauges(sessionManager, bykcService, cgyyService, spocService)
 
   val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   cleanupScope.launch {
@@ -93,21 +97,24 @@ fun Application.module() {
       val expiredPreLogin = sessionManager.cleanupExpiredPreLoginSessions()
       val expiredSigninClients = SigninService.cleanupExpiredClients()
       val expiredBykcClients = bykcService.cleanupExpiredClients()
+      val expiredCgyyClients = cgyyService.cleanupExpiredClients()
       val expiredSpocClients = spocService.cleanupExpiredClients()
       if (
-        expiredSessions +
-          expiredPreLogin +
-          expiredSigninClients +
-          expiredBykcClients +
-          expiredSpocClients > 0
+          expiredSessions +
+              expiredPreLogin +
+              expiredSigninClients +
+              expiredBykcClients +
+              expiredCgyyClients +
+              expiredSpocClients > 0
       ) {
         log.info(
-          "Cleanup removed sessions={}, prelogin={}, signinClients={}, bykcClients={}, spocClients={}",
-          expiredSessions,
-          expiredPreLogin,
-          expiredSigninClients,
-          expiredBykcClients,
-          expiredSpocClients,
+            "Cleanup removed sessions={}, prelogin={}, signinClients={}, bykcClients={}, cgyyClients={}, spocClients={}",
+            expiredSessions,
+            expiredPreLogin,
+            expiredSigninClients,
+            expiredBykcClients,
+            expiredCgyyClients,
+            expiredSpocClients,
         )
       }
     }
@@ -117,8 +124,10 @@ fun Application.module() {
     cleanupScope.cancel()
     SigninService.closeAll()
     bykcService.clearCache()
+    cgyyService.clearCache()
     spocService.clearCache()
     sessionManager.close()
+    GlobalRefreshTokenService.instance.close()
   }
 
   routing {
@@ -134,6 +143,7 @@ fun Application.module() {
       examRouting()
       signinRouting()
       classroomRouting()
+      cgyyRouting()
       evaluationRouting()
       spocRouting()
     }
@@ -144,18 +154,21 @@ fun Application.module() {
 }
 
 private fun registerPerformanceGauges(
-  sessionManager: cn.edu.ubaa.auth.SessionManager,
-  bykcService: cn.edu.ubaa.bykc.BykcService,
-  spocService: cn.edu.ubaa.spoc.SpocService,
+    sessionManager: cn.edu.ubaa.auth.SessionManager,
+    bykcService: cn.edu.ubaa.bykc.BykcService,
+    cgyyService: cn.edu.ubaa.cgyy.CgyyService,
+    spocService: cn.edu.ubaa.spoc.SpocService,
 ) {
   Gauge.builder("ubaa.sessions.active") { sessionManager.activeSessionCount().toDouble() }
-    .register(appMicrometerRegistry)
+      .register(appMicrometerRegistry)
   Gauge.builder("ubaa.sessions.prelogin") { sessionManager.preLoginSessionCount().toDouble() }
-    .register(appMicrometerRegistry)
+      .register(appMicrometerRegistry)
   Gauge.builder("ubaa.signin.cache") { SigninService.cacheSize().toDouble() }
-    .register(appMicrometerRegistry)
+      .register(appMicrometerRegistry)
   Gauge.builder("ubaa.bykc.cache") { bykcService.cacheSize().toDouble() }
-    .register(appMicrometerRegistry)
+      .register(appMicrometerRegistry)
+  Gauge.builder("ubaa.cgyy.cache") { cgyyService.cacheSize().toDouble() }
+      .register(appMicrometerRegistry)
   Gauge.builder("ubaa.spoc.cache") { spocService.cacheSize().toDouble() }
-    .register(appMicrometerRegistry)
+      .register(appMicrometerRegistry)
 }

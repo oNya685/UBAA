@@ -4,6 +4,7 @@ import cn.edu.ubaa.api.SessionStatusResponse
 import cn.edu.ubaa.auth.JwtAuth.getUserSession
 import cn.edu.ubaa.model.dto.CaptchaRequiredResponse
 import cn.edu.ubaa.model.dto.LoginRequest
+import cn.edu.ubaa.model.dto.TokenRefreshRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -38,16 +39,16 @@ fun Route.authRouting() {
         call.respond(HttpStatusCode.OK, preloadResponse)
       } catch (e: ContentTransformationException) {
         call.respond(
-          HttpStatusCode.BadRequest,
-          ErrorResponse(
-            ErrorDetails("invalid_request", "Invalid request body: clientId is required")
-          ),
+            HttpStatusCode.BadRequest,
+            ErrorResponse(
+                ErrorDetails("invalid_request", "Invalid request body: clientId is required")
+            ),
         )
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during login preload.", e)
         call.respond(
-          HttpStatusCode.InternalServerError,
-          ErrorResponse(ErrorDetails("internal_server_error", "Failed to preload login state")),
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(ErrorDetails("internal_server_error", "Failed to preload login state")),
         )
       }
     }
@@ -57,31 +58,64 @@ fun Route.authRouting() {
       try {
         val request = call.receive<LoginRequest>()
         application.log.info("Login attempt for user: {}", request.username)
-        val loginResponse = authService.loginWithToken(request)
+        val loginResponse = authService.login(request)
         application.log.info("Login successful for user: {}", request.username)
         call.respond(HttpStatusCode.OK, loginResponse)
       } catch (e: ContentTransformationException) {
         call.respond(
-          HttpStatusCode.BadRequest,
-          ErrorResponse(ErrorDetails("invalid_request", "Invalid request body: ${e.message}")),
+            HttpStatusCode.BadRequest,
+            ErrorResponse(ErrorDetails("invalid_request", "Invalid request body: ${e.message}")),
         )
       } catch (e: CaptchaRequiredException) {
         call.respond(
-          HttpStatusCode.UnprocessableEntity, // 需验证码
-          CaptchaRequiredResponse(e.captchaInfo, e.execution, e.message ?: "需要验证码"),
+            HttpStatusCode.UnprocessableEntity, // 需验证码
+            CaptchaRequiredResponse(e.captchaInfo, e.execution, e.message ?: "需要验证码"),
         )
       } catch (e: LoginException) {
         call.respond(
-          HttpStatusCode.Unauthorized,
-          ErrorResponse(ErrorDetails("invalid_credentials", e.message ?: "Login failed")),
+            HttpStatusCode.Unauthorized,
+            ErrorResponse(ErrorDetails("invalid_credentials", e.message ?: "Login failed")),
         )
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during login.", e)
         call.respond(
-          HttpStatusCode.InternalServerError,
-          ErrorResponse(
-            ErrorDetails("internal_server_error", "An unexpected server error occurred.")
-          ),
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
+        )
+      }
+    }
+
+    /** POST /api/v1/auth/refresh 使用 refresh token 换取新的 token 对。 */
+    post("/refresh") {
+      try {
+        val request = call.receive<TokenRefreshRequest>()
+        val refreshResponse = authService.refreshTokens(request.refreshToken)
+        if (refreshResponse != null) {
+          call.respond(HttpStatusCode.OK, refreshResponse)
+        } else {
+          call.respond(
+              HttpStatusCode.Unauthorized,
+              ErrorResponse(
+                  ErrorDetails("invalid_refresh_token", "Invalid or expired refresh token")
+              ),
+          )
+        }
+      } catch (e: ContentTransformationException) {
+        call.respond(
+            HttpStatusCode.BadRequest,
+            ErrorResponse(
+                ErrorDetails("invalid_request", "Invalid request body: refreshToken is required")
+            ),
+        )
+      } catch (e: Exception) {
+        application.log.error("An unexpected error occurred during token refresh.", e)
+        call.respond(
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
         )
       }
     }
@@ -90,32 +124,33 @@ fun Route.authRouting() {
     get("/status") {
       try {
         val session = call.getUserSession()
-        if (session != null) {
+        if (session != null && authService.validateSession(session)) {
           application.log.info(
-            "Session status check: user {} is authenticated",
-            session.userData.name,
+              "Session status check: user {} is authenticated",
+              session.userData.name,
           )
           val statusResponse =
-            SessionStatusResponse(
-              user = session.userData,
-              lastActivity = session.lastActivity().toString(),
-              authenticatedAt = session.authenticatedAt.toString(),
-            )
+              SessionStatusResponse(
+                  user = session.userData,
+                  lastActivity = session.lastActivity().toString(),
+                  authenticatedAt = session.authenticatedAt.toString(),
+              )
           call.respond(HttpStatusCode.OK, statusResponse)
         } else {
+          session?.let { sessionManager.invalidateSession(it.username) }
           application.log.warn("Session status check failed: invalid or expired token")
           call.respond(
-            HttpStatusCode.Unauthorized,
-            ErrorResponse(ErrorDetails("invalid_token", "Invalid or expired JWT token")),
+              HttpStatusCode.Unauthorized,
+              ErrorResponse(ErrorDetails("invalid_token", "Invalid or expired JWT token")),
           )
         }
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during status check.", e)
         call.respond(
-          HttpStatusCode.InternalServerError,
-          ErrorResponse(
-            ErrorDetails("internal_server_error", "An unexpected server error occurred.")
-          ),
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
         )
       }
     }
@@ -129,17 +164,17 @@ fun Route.authRouting() {
           call.respond(HttpStatusCode.OK, mapOf("message" to "Logged out successfully"))
         } else {
           call.respond(
-            HttpStatusCode.Unauthorized,
-            ErrorResponse(ErrorDetails("invalid_token", "Invalid or expired JWT token")),
+              HttpStatusCode.Unauthorized,
+              ErrorResponse(ErrorDetails("invalid_token", "Invalid or expired JWT token")),
           )
         }
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during logout.", e)
         call.respond(
-          HttpStatusCode.InternalServerError,
-          ErrorResponse(
-            ErrorDetails("internal_server_error", "An unexpected server error occurred.")
-          ),
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
         )
       }
     }
@@ -150,29 +185,29 @@ fun Route.authRouting() {
         val captchaId = call.parameters["captchaId"]
         if (captchaId.isNullOrBlank()) {
           call.respond(
-            HttpStatusCode.BadRequest,
-            ErrorResponse(ErrorDetails("invalid_request", "captchaId parameter is required")),
+              HttpStatusCode.BadRequest,
+              ErrorResponse(ErrorDetails("invalid_request", "captchaId parameter is required")),
           )
           return@get
         }
 
         val imageBytes =
-          authService.getCaptchaImage(cn.edu.ubaa.utils.HttpClients.sharedClient, captchaId)
+            authService.getCaptchaImage(cn.edu.ubaa.utils.HttpClients.sharedClient, captchaId)
         if (imageBytes != null) {
           call.respondBytes(bytes = imageBytes, contentType = ContentType.Image.JPEG)
         } else {
           call.respond(
-            HttpStatusCode.NotFound,
-            ErrorResponse(ErrorDetails("captcha_not_found", "CAPTCHA image not found")),
+              HttpStatusCode.NotFound,
+              ErrorResponse(ErrorDetails("captcha_not_found", "CAPTCHA image not found")),
           )
         }
       } catch (e: Exception) {
         application.log.error("An unexpected error occurred during CAPTCHA fetch.", e)
         call.respond(
-          HttpStatusCode.InternalServerError,
-          ErrorResponse(
-            ErrorDetails("internal_server_error", "An unexpected server error occurred.")
-          ),
+            HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+            ),
         )
       }
     }

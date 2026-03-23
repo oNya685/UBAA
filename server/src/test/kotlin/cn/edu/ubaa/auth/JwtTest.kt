@@ -45,31 +45,31 @@ class JwtUtilTest {
 
 class SessionManagerJwtTest {
   private fun createSessionManager(
-    sessionTtl: Duration = Duration.ofMinutes(30),
-    activityPersistInterval: Duration = Duration.ofSeconds(60),
+      sessionTtl: Duration = Duration.ofMinutes(30),
+      activityPersistInterval: Duration = Duration.ofSeconds(60),
   ): SessionManager {
     return SessionManager(
-      sessionTtl = sessionTtl,
-      activityPersistInterval = activityPersistInterval,
-      sessionStore = InMemorySessionStore(),
-      cookieStorageFactory = InMemoryCookieStorageFactory(),
+        sessionTtl = sessionTtl,
+        activityPersistInterval = activityPersistInterval,
+        sessionStore = InMemorySessionStore(),
+        cookieStorageFactory = InMemoryCookieStorageFactory(),
     )
   }
 
   @Test
-  fun testSessionWithTokenCommit() = runBlocking {
+  fun testSessionCommitAndTokenLookup() = runBlocking {
     val sessionManager = createSessionManager()
     val username = "testuser"
     val userData = UserData("Test User", "123456")
 
     val candidate = sessionManager.prepareSession(username)
-    val sessionWithToken = sessionManager.commitSessionWithToken(candidate, userData)
+    val session = sessionManager.commitSession(candidate, userData)
+    val jwtToken = JwtUtil.generateToken(username, Duration.ofMinutes(30))
 
-    assertNotNull(sessionWithToken.jwtToken)
-    assertEquals(userData, sessionWithToken.session.userData)
-    assertEquals(username, sessionWithToken.session.username)
+    assertEquals(userData, session.userData)
+    assertEquals(username, session.username)
 
-    val retrievedSession = sessionManager.getSessionByToken(sessionWithToken.jwtToken)
+    val retrievedSession = sessionManager.getSessionByToken(jwtToken)
     assertNotNull(retrievedSession)
     assertEquals(username, retrievedSession.username)
   }
@@ -88,12 +88,13 @@ class SessionManagerJwtTest {
     val userData = UserData("Read Only", "10001")
 
     val candidate = sessionManager.prepareSession(username)
-    val sessionWithToken = sessionManager.commitSessionWithToken(candidate, userData)
-    val before = sessionWithToken.session.lastActivity()
+    val session = sessionManager.commitSession(candidate, userData)
+    val before = session.lastActivity()
 
     Thread.sleep(10)
 
-    val readOnlySession = sessionManager.getSession(username, SessionManager.SessionAccess.READ_ONLY)
+    val readOnlySession =
+        sessionManager.getSession(username, SessionManager.SessionAccess.READ_ONLY)
     assertNotNull(readOnlySession)
     assertEquals(before, readOnlySession.lastActivity())
   }
@@ -102,15 +103,15 @@ class SessionManagerJwtTest {
   fun testInvalidateSessionClearsCookieStorageBeforeClosingIt() = runBlocking {
     val trackingCookieStorageFactory = TrackingCookieStorageFactory()
     val sessionManager =
-      SessionManager(
-        sessionStore = InMemorySessionStore(),
-        cookieStorageFactory = trackingCookieStorageFactory,
-      )
+        SessionManager(
+            sessionStore = InMemorySessionStore(),
+            cookieStorageFactory = trackingCookieStorageFactory,
+        )
     val username = "logout-user"
     val userData = UserData("Logout User", "10003")
 
     val candidate = sessionManager.prepareSession(username)
-    sessionManager.commitSessionWithToken(candidate, userData)
+    sessionManager.commitSession(candidate, userData)
     val baselineEventCount = trackingCookieStorageFactory.events.size
 
     sessionManager.invalidateSession(username)
@@ -121,4 +122,64 @@ class SessionManagerJwtTest {
     assertTrue(invalidateEvents.indexOf("clear") < invalidateEvents.indexOf("close"))
   }
 
+  @Test
+  fun testRefreshTokenRotation() = runBlocking {
+    val sessionManager = createSessionManager()
+    val refreshTokenService =
+        RefreshTokenService(
+            accessTokenTtl = Duration.ofMinutes(30),
+            refreshTokenTtl = Duration.ofDays(7),
+            refreshTokenStore = InMemoryRefreshTokenStore(),
+        )
+    val username = "refresh-user"
+    val userData = UserData("Refresh User", "10011")
+
+    val candidate = sessionManager.prepareSession(username)
+    sessionManager.commitSession(candidate, userData)
+    val initialTokens = refreshTokenService.issueTokens(username)
+
+    val refreshedTokens =
+        refreshTokenService.refreshTokens(initialTokens.refreshToken, sessionManager)
+
+    assertNotNull(refreshedTokens)
+    assertNotEquals(initialTokens.refreshToken, refreshedTokens.refreshToken)
+    assertNotNull(sessionManager.getSessionByToken(refreshedTokens.accessToken))
+    assertNull(refreshTokenService.refreshTokens(initialTokens.refreshToken, sessionManager))
+  }
+
+  @Test
+  fun testRefreshFailsWhenRefreshTokenExpires() = runBlocking {
+    val sessionManager = createSessionManager()
+    val refreshTokenService =
+        RefreshTokenService(
+            refreshTokenTtl = Duration.ofMillis(1),
+            refreshTokenStore = InMemoryRefreshTokenStore(),
+        )
+    val username = "expired-refresh"
+    val userData = UserData("Expired Refresh", "10012")
+
+    val candidate = sessionManager.prepareSession(username)
+    sessionManager.commitSession(candidate, userData)
+    val initialTokens = refreshTokenService.issueTokens(username)
+
+    Thread.sleep(10)
+
+    assertNull(refreshTokenService.refreshTokens(initialTokens.refreshToken, sessionManager))
+  }
+
+  @Test
+  fun testRefreshFailsWhenSessionExpired() = runBlocking {
+    val sessionManager = createSessionManager(sessionTtl = Duration.ofMillis(1))
+    val refreshTokenService = RefreshTokenService(refreshTokenStore = InMemoryRefreshTokenStore())
+    val username = "expired-session"
+    val userData = UserData("Expired Session", "10013")
+
+    val candidate = sessionManager.prepareSession(username)
+    sessionManager.commitSession(candidate, userData)
+    val initialTokens = refreshTokenService.issueTokens(username)
+
+    Thread.sleep(10)
+
+    assertNull(refreshTokenService.refreshTokens(initialTokens.refreshToken, sessionManager))
+  }
 }

@@ -13,11 +13,11 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class LoginRequest(
-  val username: String,
-  val password: String,
-  val captcha: String? = null,
-  val execution: String? = null,
-  val clientId: String? = null, // 客户端标识，用于关联 preload 时创建的会话
+    val username: String,
+    val password: String,
+    val captcha: String? = null,
+    val execution: String? = null,
+    val clientId: String? = null, // 客户端标识，用于关联 preload 时创建的会话
 )
 
 /**
@@ -32,9 +32,19 @@ data class LoginRequest(
  * 登录成功响应。
  *
  * @property user 用户数据。
- * @property token 颁发的 JWT 认证令牌。
+ * @property accessToken 颁发的短期访问令牌。
+ * @property refreshToken 用于续签 access token 的刷新令牌。
+ * @property accessTokenExpiresAt access token 过期时间（ISO-8601）。
+ * @property refreshTokenExpiresAt refresh token 过期时间（ISO-8601）。
  */
-@Serializable data class LoginResponse(val user: UserData, val token: String)
+@Serializable
+data class LoginResponse(
+    val user: UserData,
+    val accessToken: String,
+    val refreshToken: String,
+    val accessTokenExpiresAt: String,
+    val refreshTokenExpiresAt: String,
+)
 
 /**
  * 验证码信息。
@@ -46,10 +56,10 @@ data class LoginRequest(
  */
 @Serializable
 data class CaptchaInfo(
-  val id: String,
-  val type: String = "image",
-  val imageUrl: String,
-  val base64Image: String? = null,
+    val id: String,
+    val type: String = "image",
+    val imageUrl: String,
+    val base64Image: String? = null,
 )
 
 /**
@@ -61,9 +71,9 @@ data class CaptchaInfo(
  */
 @Serializable
 data class CaptchaRequiredResponse(
-  val captcha: CaptchaInfo,
-  val execution: String,
-  val message: String = "需要验证码验证",
+    val captcha: CaptchaInfo,
+    val execution: String,
+    val message: String = "需要验证码验证",
 )
 
 /**
@@ -73,7 +83,7 @@ data class CaptchaRequiredResponse(
  */
 @Serializable
 data class LoginPreloadRequest(
-  val clientId: String // 客户端标识（设备 ID 或 UUID）
+    val clientId: String // 客户端标识（设备 ID 或 UUID）
 )
 
 /**
@@ -83,15 +93,33 @@ data class LoginPreloadRequest(
  * @property captcha 验证码信息（若需要）。
  * @property execution SSO 执行标识。
  * @property clientId 返回的客户端标识。
- * @property token 已登录用户的 JWT 令牌（若适用）。
+ * @property accessToken 已登录用户的 access token（若适用）。
+ * @property refreshToken 已登录用户的 refresh token（若适用）。
+ * @property accessTokenExpiresAt access token 过期时间（ISO-8601）。
+ * @property refreshTokenExpiresAt refresh token 过期时间（ISO-8601）。
  * @property userData 已登录用户的基本信息（若适用）。
  */
 @Serializable
 data class LoginPreloadResponse(
-  val captchaRequired: Boolean,
-  val captcha: CaptchaInfo? = null,
-  val execution: String? = null,
-  val clientId: String? = null, // 返回客户端标识，用于后续登录
-  val token: String? = null, // 如果已登录，直接返回 JWT
-  val userData: UserData? = null, // 如果已登录，直接返回用户信息
+    val captchaRequired: Boolean,
+    val captcha: CaptchaInfo? = null,
+    val execution: String? = null,
+    val clientId: String? = null, // 返回客户端标识，用于后续登录
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
+    val accessTokenExpiresAt: String? = null,
+    val refreshTokenExpiresAt: String? = null,
+    val userData: UserData? = null, // 如果已登录，直接返回用户信息
+)
+
+/** 刷新 token 请求。 */
+@Serializable data class TokenRefreshRequest(val refreshToken: String)
+
+/** 刷新 token 响应。 */
+@Serializable
+data class TokenRefreshResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val accessTokenExpiresAt: String,
+    val refreshTokenExpiresAt: String,
 )

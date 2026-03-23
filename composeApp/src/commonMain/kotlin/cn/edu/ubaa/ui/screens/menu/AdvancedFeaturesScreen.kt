@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AssignmentTurnedIn
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Card
@@ -31,55 +32,63 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 private data class AdvancedFeatureItem(
-  val id: String,
-  val title: String,
-  val description: String,
-  val icon: ImageVector,
+    val id: String,
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
 )
 
 @Composable
 fun AdvancedFeaturesScreen(
-  onSigninClick: () -> Unit,
-  onEvaluationClick: () -> Unit,
-  modifier: Modifier = Modifier,
+    onSigninClick: () -> Unit,
+    onCgyyClick: () -> Unit,
+    onEvaluationClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
   val features =
-    listOf(
-      AdvancedFeatureItem(
-        id = "signin",
-        title = "课程签到",
-        description = "快速完成课堂签到",
-        icon = Icons.Default.HowToReg,
-      ),
-      AdvancedFeatureItem(
-        id = "evaluation",
-        title = "自动评教",
-        description = "一键完成学期末评教任务",
-        icon = Icons.Default.AssignmentTurnedIn,
-      ),
-      AdvancedFeatureItem(
-        id = "more",
-        title = "更多功能",
-        description = "更多高级功能正在开发中...",
-        icon = Icons.Default.MoreHoriz,
-      ),
-    )
+      listOf(
+          AdvancedFeatureItem(
+              id = "signin",
+              title = "课程签到",
+              description = "快速完成课堂签到",
+              icon = Icons.Default.HowToReg,
+          ),
+          AdvancedFeatureItem(
+              id = "cgyy",
+              title = "研讨室预约",
+              description = "查询、提交和管理研讨室预约",
+              icon = Icons.Default.DateRange,
+          ),
+          AdvancedFeatureItem(
+              id = "evaluation",
+              title = "自动评教",
+              description = "一键完成学期末评教任务",
+              icon = Icons.Default.AssignmentTurnedIn,
+          ),
+          AdvancedFeatureItem(
+              id = "more",
+              title = "更多功能",
+              description = "更多高级功能正在开发中...",
+              icon = Icons.Default.MoreHoriz,
+          ),
+      )
 
   Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
     LazyVerticalGrid(
-      columns = GridCells.Fixed(2),
-      horizontalArrangement = Arrangement.spacedBy(12.dp),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
       items(features) { feature ->
         AdvancedFeatureCard(
-          feature = feature,
-          onClick = {
-            when (feature.id) {
-              "signin" -> onSigninClick()
-              "evaluation" -> onEvaluationClick()
-            }
-          },
+            feature = feature,
+            onClick = {
+              when (feature.id) {
+                "signin" -> onSigninClick()
+                "cgyy" -> onCgyyClick()
+                "evaluation" -> onEvaluationClick()
+              }
+            },
         )
       }
     }
@@ -88,40 +97,40 @@ fun AdvancedFeaturesScreen(
 
 @Composable
 private fun AdvancedFeatureCard(
-  feature: AdvancedFeatureItem,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
+    feature: AdvancedFeatureItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
   Card(
-    modifier = modifier.fillMaxWidth().heightIn(min = 160.dp).clickable { onClick() },
-    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+      modifier = modifier.fillMaxWidth().heightIn(min = 160.dp).clickable { onClick() },
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+      elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
   ) {
     Column(
-      modifier = Modifier.fillMaxSize().padding(16.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
       Icon(
-        imageVector = feature.icon,
-        contentDescription = null,
-        modifier = Modifier.size(48.dp),
-        tint = MaterialTheme.colorScheme.primary,
+          imageVector = feature.icon,
+          contentDescription = null,
+          modifier = Modifier.size(48.dp),
+          tint = MaterialTheme.colorScheme.primary,
       )
       Spacer(modifier = Modifier.height(12.dp))
       Text(
-        text = feature.title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
+          text = feature.title,
+          style = MaterialTheme.typography.titleMedium,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
       )
       Spacer(modifier = Modifier.height(4.dp))
       Text(
-        text = feature.description,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+          text = feature.description,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          textAlign = TextAlign.Center,
+          lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
       )
     }
   }

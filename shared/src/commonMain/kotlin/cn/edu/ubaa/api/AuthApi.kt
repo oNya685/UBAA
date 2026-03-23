@@ -21,9 +21,9 @@ object ApiClientProvider {
  */
 @Serializable
 data class SessionStatusResponse(
-  val user: UserData,
-  val lastActivity: String,
-  val authenticatedAt: String,
+    val user: UserData,
+    val lastActivity: String,
+    val authenticatedAt: String,
 )
 
 /**
@@ -34,8 +34,8 @@ data class SessionStatusResponse(
 class AuthService(private val apiClient: ApiClient = ApiClientProvider.shared) {
 
   /** 将本地存储的令牌应用到当前 ApiClient 中。 */
-  fun applyStoredToken() {
-    TokenStore.get()?.let { apiClient.updateToken(it) }
+  fun applyStoredTokens() {
+    apiClient.applyStoredTokens()
   }
 
   /**
@@ -47,13 +47,15 @@ class AuthService(private val apiClient: ApiClient = ApiClientProvider.shared) {
     return try {
       val clientId = ClientIdStore.getOrCreate()
       val response =
-        apiClient.getClient().post("api/v1/auth/preload") {
-          contentType(ContentType.Application.Json)
-          setBody(LoginPreloadRequest(clientId))
-        }
+          apiClient.getClient().post("api/v1/auth/preload") {
+            contentType(ContentType.Application.Json)
+            setBody(LoginPreloadRequest(clientId))
+          }
       when (response.status) {
         HttpStatusCode.OK -> {
-          Result.success(response.body<LoginPreloadResponse>())
+          val preloadResponse = response.body<LoginPreloadResponse>()
+          preloadResponse.toStoredAuthTokensOrNull()?.let { apiClient.updateTokens(it) }
+          Result.success(preloadResponse)
         }
         else -> {
           Result.failure(Exception("Failed to preload login state: ${response.status}"))
@@ -74,25 +76,23 @@ class AuthService(private val apiClient: ApiClient = ApiClientProvider.shared) {
    * @return 登录结果，成功则返回 LoginResponse 并自动更新 ApiClient 令牌。
    */
   suspend fun login(
-    username: String,
-    password: String,
-    captcha: String? = null,
-    execution: String? = null,
+      username: String,
+      password: String,
+      captcha: String? = null,
+      execution: String? = null,
   ): Result<LoginResponse> {
     return try {
       val clientId = ClientIdStore.get()
       val response =
-        apiClient.getClient().post("api/v1/auth/login") {
-          contentType(ContentType.Application.Json)
-          setBody(LoginRequest(username, password, captcha, execution, clientId))
-        }
+          apiClient.getClient().post("api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(LoginRequest(username, password, captcha, execution, clientId))
+          }
 
       when (response.status) {
         HttpStatusCode.OK -> {
           val loginResponse = response.body<LoginResponse>()
-          // 更新 Token，保证后续认证
-          apiClient.updateToken(loginResponse.token)
-          TokenStore.save(loginResponse.token)
+          apiClient.updateTokens(loginResponse.toStoredAuthTokens())
           Result.success(loginResponse)
         }
         HttpStatusCode.Unauthorized -> {
@@ -102,11 +102,11 @@ class AuthService(private val apiClient: ApiClient = ApiClientProvider.shared) {
         HttpStatusCode.UnprocessableEntity -> { // 422 - 需要验证码
           val captchaResponse = response.body<CaptchaRequiredResponse>()
           Result.failure(
-            CaptchaRequiredClientException(
-              captchaResponse.captcha,
-              captchaResponse.execution,
-              captchaResponse.message,
-            )
+              CaptchaRequiredClientException(
+                  captchaResponse.captcha,
+                  captchaResponse.execution,
+                  captchaResponse.message,
+              )
           )
         }
         else -> {
@@ -146,16 +146,35 @@ class AuthService(private val apiClient: ApiClient = ApiClientProvider.shared) {
       }
 
       // 始终清理本地状态
-      TokenStore.clear()
+      apiClient.clearAuthTokens()
       apiClient.close()
       Result.success(Unit)
     } catch (e: Exception) {
       // 网络异常时也要清理本地状态
-      TokenStore.clear()
+      apiClient.clearAuthTokens()
       apiClient.close()
       Result.failure(e)
     }
   }
+}
+
+private fun LoginResponse.toStoredAuthTokens(): StoredAuthTokens =
+    StoredAuthTokens(
+        accessToken = accessToken,
+        refreshToken = refreshToken,
+        accessTokenExpiresAt = accessTokenExpiresAt,
+        refreshTokenExpiresAt = refreshTokenExpiresAt,
+    )
+
+private fun LoginPreloadResponse.toStoredAuthTokensOrNull(): StoredAuthTokens? {
+  val currentAccessToken = accessToken ?: return null
+  val currentRefreshToken = refreshToken ?: return null
+  return StoredAuthTokens(
+      accessToken = currentAccessToken,
+      refreshToken = currentRefreshToken,
+      accessTokenExpiresAt = accessTokenExpiresAt,
+      refreshTokenExpiresAt = refreshTokenExpiresAt,
+  )
 }
 
 /**
