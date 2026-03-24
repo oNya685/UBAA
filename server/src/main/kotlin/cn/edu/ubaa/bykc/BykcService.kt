@@ -108,7 +108,8 @@ class BykcService(
                 courseCurrentCount = course.courseCurrentCount ?: 0,
                 category = course.courseNewKind1?.kindName,
                 subCategory = course.courseNewKind2?.kindName,
-                hasSignPoints = parseSignConfig(course.courseSignConfig)?.signPoints?.isNotEmpty() == true,
+                hasSignPoints =
+                    parseSignConfig(course.courseSignConfig)?.signPoints?.isNotEmpty() == true,
                 status = status.displayName,
                 selected = course.selected ?: false,
                 courseDesc = course.courseDesc,
@@ -143,7 +144,8 @@ class BykcService(
               courseCurrentCount = course.courseCurrentCount ?: 0,
               category = course.courseNewKind1?.kindName,
               subCategory = course.courseNewKind2?.kindName,
-              hasSignPoints = parseSignConfig(course.courseSignConfig)?.signPoints?.isNotEmpty() == true,
+              hasSignPoints =
+                  parseSignConfig(course.courseSignConfig)?.signPoints?.isNotEmpty() == true,
               status = status.displayName,
               selected = course.selected ?: false,
               courseDesc = course.courseDesc,

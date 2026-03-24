@@ -1,9 +1,5 @@
 package cn.edu.ubaa.ui.screens.menu
 
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AssignmentTurnedIn
 import androidx.compose.material.icons.filled.CheckCircle
@@ -24,6 +21,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -124,8 +124,7 @@ internal fun HomeScreen(
       if (todoFailedSources.isNotEmpty()) {
         item {
           HomeInfoBanner(
-              message =
-                  "部分内容加载失败：${todoFailedSources.joinToString("、") { it.label }}，已显示其余待办。",
+              message = "部分内容加载失败：${todoFailedSources.joinToString("、") { it.label }}，已显示其余待办。",
           )
         }
       }
@@ -216,11 +215,9 @@ private fun HomeTodoCard(
   val isSigninItem = item.action is HomeTodoAction.SigninCourse
   Card(
       modifier =
-          Modifier.fillMaxWidth().then(
-              if (isSigninItem) Modifier else Modifier.clickable(onClick = onClick)
-          ),
-      colors =
-          CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+          Modifier.fillMaxWidth()
+              .then(if (isSigninItem) Modifier else Modifier.clickable(onClick = onClick)),
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
       elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
   ) {
     Row(
@@ -251,7 +248,11 @@ private fun HomeTodoCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-          TodoChip(text = item.source.label, color = sourceContainerColor(item.source), contentColor = sourceContentColor(item.source))
+          TodoChip(
+              text = item.source.label,
+              color = sourceContainerColor(item.source),
+              contentColor = sourceContentColor(item.source),
+          )
           TodoChip(
               text = item.statusLabel,
               color = MaterialTheme.colorScheme.secondaryContainer,

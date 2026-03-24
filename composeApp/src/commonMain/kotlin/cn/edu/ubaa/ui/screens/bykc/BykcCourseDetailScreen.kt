@@ -59,9 +59,7 @@ fun BykcCourseDetailScreen(
             course.courseMaxCount > 0 && course.courseCurrentCount >= course.courseMaxCount
           }
       val canSelectCourse =
-          !operationInProgress &&
-              !isCourseFull &&
-              course.status == BykcCourseStatus.AVAILABLE
+          !operationInProgress && !isCourseFull && course.status == BykcCourseStatus.AVAILABLE
 
       var now by remember { mutableStateOf<kotlin.time.Instant>(Clock.System.now()) }
       LaunchedEffect(Unit) {

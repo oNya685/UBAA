@@ -5,12 +5,12 @@ import cn.edu.ubaa.model.dto.CgyyOrderDto
 import cn.edu.ubaa.model.dto.SigninClassDto
 import cn.edu.ubaa.model.dto.SpocAssignmentSummaryDto
 import cn.edu.ubaa.model.dto.SpocSubmissionStatus
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import kotlin.time.Duration.Companion.minutes
 
 internal enum class HomeTodoSource(val label: String) {
   BYKC("博雅"),
@@ -130,7 +130,11 @@ private fun buildSpocTodoItems(
 ): List<HomeTodoItem> =
     assignments.mapNotNull { assignment ->
       val dueTime = parseHomeDateTime(assignment.dueTime)
-      if (assignment.submissionStatus != SpocSubmissionStatus.UNSUBMITTED || dueTime == null || dueTime <= now) {
+      if (
+          assignment.submissionStatus != SpocSubmissionStatus.UNSUBMITTED ||
+              dueTime == null ||
+              dueTime <= now
+      ) {
         return@mapNotNull null
       }
 

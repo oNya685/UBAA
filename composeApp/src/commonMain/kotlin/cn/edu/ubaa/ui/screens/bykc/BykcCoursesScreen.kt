@@ -48,9 +48,9 @@ fun BykcCoursesScreen(
     Column(modifier = Modifier.fillMaxSize()) {
       Row(
           modifier =
-              Modifier.fillMaxWidth()
-                  .padding(horizontal = 16.dp, vertical = 8.dp)
-                  .clickable { onHideFullCoursesChange(!hideFullCourses) },
+              Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clickable {
+                onHideFullCoursesChange(!hideFullCourses)
+              },
           verticalAlignment = Alignment.CenterVertically,
       ) {
         Checkbox(checked = hideFullCourses, onCheckedChange = onHideFullCoursesChange)
@@ -83,7 +83,10 @@ fun BykcCoursesScreen(
           ) {
             if (visibleCourses.isEmpty()) {
               item {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                   Text(
                       text =
                           if (hideFullCourses && courses.isNotEmpty()) "当前筛选条件下暂无有空位课程"
@@ -149,8 +152,7 @@ fun BykcCoursesScreen(
 }
 
 private fun BykcCourseDto.isFullCourse(): Boolean =
-    status == BykcCourseStatus.FULL ||
-        (courseMaxCount > 0 && courseCurrentCount >= courseMaxCount)
+    status == BykcCourseStatus.FULL || (courseMaxCount > 0 && courseCurrentCount >= courseMaxCount)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

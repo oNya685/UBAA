@@ -100,7 +100,9 @@ fun MainAppScreen(
   var showSidebar by remember { mutableStateOf(false) }
   val homeSnackbarHostState = remember { SnackbarHostState() }
   val homeNow by
-      produceState(initialValue = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())) {
+      produceState(
+          initialValue = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+      ) {
         while (true) {
           delay(60_000)
           value = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -161,13 +163,12 @@ fun MainAppScreen(
           spocUiState.isRefreshing ||
           signinUiState.isLoading ||
           cgyyUiState.isOrdersLoading
-  val homeTodoFailedSources =
-      buildList {
-        if (bykcChosenState.error != null) add(HomeTodoSource.BYKC)
-        if (spocUiState.error != null) add(HomeTodoSource.SPOC)
-        if (cgyyUiState.ordersError != null) add(HomeTodoSource.CGYY)
-        if (signinUiState.error != null) add(HomeTodoSource.SIGNIN)
-      }
+  val homeTodoFailedSources = buildList {
+    if (bykcChosenState.error != null) add(HomeTodoSource.BYKC)
+    if (spocUiState.error != null) add(HomeTodoSource.SPOC)
+    if (cgyyUiState.ordersError != null) add(HomeTodoSource.CGYY)
+    if (signinUiState.error != null) add(HomeTodoSource.SIGNIN)
+  }
 
   fun refreshHomeData() {
     scheduleViewModel.loadTodaySchedule()
@@ -620,7 +621,8 @@ fun MainAppScreen(
     if (currentScreen == AppScreen.HOME) {
       SnackbarHost(
           hostState = homeSnackbarHostState,
-          modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 88.dp),
+          modifier =
+              Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 88.dp),
       )
     }
 
