@@ -256,8 +256,7 @@ internal open class SpocClient(
   companion object {
     private const val CURRENT_TERM_PARAM =
         "YHrxtTavu6raCwC0/qdgYffB9evWHBkTng/XS4W6j3f/TPo02iEPSoegscDTRNzIPRG49o3RHl4JiFCXAiBkkA=="
-    private const val ASSIGNMENTS_PAGE_SQL_ID =
-        "1713252980496efac7d5d9985e81693116d3e8a52ebf2b"
+    private const val ASSIGNMENTS_PAGE_SQL_ID = "1713252980496efac7d5d9985e81693116d3e8a52ebf2b"
     private const val DEFAULT_PAGE_SIZE = 15
   }
 }

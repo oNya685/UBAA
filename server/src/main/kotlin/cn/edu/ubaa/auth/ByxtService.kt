@@ -57,7 +57,8 @@ object ByxtService {
   }
 
   fun isSessionReady(status: HttpStatusCode, finalUrl: String, body: String): Boolean {
-    return classifyUndergradResponse(status, finalUrl, body) == AcademicPortalProbeResult.UNDERGRAD_READY
+    return classifyUndergradResponse(status, finalUrl, body) ==
+        AcademicPortalProbeResult.UNDERGRAD_READY
   }
 
   internal fun classifyUndergradResponse(

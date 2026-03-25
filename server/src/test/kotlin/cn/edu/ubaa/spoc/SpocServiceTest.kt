@@ -6,7 +6,6 @@ import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.model.dto.SpocSubmissionStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlinx.coroutines.runBlocking
 
 class SpocServiceTest {
@@ -42,23 +41,24 @@ class SpocServiceTest {
   }
 
   @Test
-  fun `get assignment detail keeps summary data and lets submit record override status`() = runBlocking {
-    val fakeClient = FakeSpocClient()
-    val service = SpocService(clientProvider = { fakeClient })
+  fun `get assignment detail keeps summary data and lets submit record override status`() =
+      runBlocking {
+        val fakeClient = FakeSpocClient()
+        val service = SpocService(clientProvider = { fakeClient })
 
-    val detail = service.getAssignmentDetail("24182104", "a1")
+        val detail = service.getAssignmentDetail("24182104", "a1")
 
-    assertEquals(1, fakeClient.submissionCalls)
-    assertEquals("关于Agentic Coding的思考", detail.title)
-    assertEquals("牛虹婷,王良", detail.teacherName)
-    assertEquals("0", detail.score)
-    assertEquals("2026-03-04 00:00:00", detail.startTime)
-    assertEquals("2026-03-11 23:59:00", detail.dueTime)
-    assertEquals(SpocSubmissionStatus.SUBMITTED, detail.submissionStatus)
-    assertEquals("已提交", detail.submissionStatusText)
-    assertEquals("2026-03-11 23:40:00", detail.submittedAt)
-    assertEquals("请尽量给出自己的思考。", detail.contentPlainText)
-  }
+        assertEquals(1, fakeClient.submissionCalls)
+        assertEquals("关于Agentic Coding的思考", detail.title)
+        assertEquals("牛虹婷,王良", detail.teacherName)
+        assertEquals("0", detail.score)
+        assertEquals("2026-03-04 00:00:00", detail.startTime)
+        assertEquals("2026-03-11 23:59:00", detail.dueTime)
+        assertEquals(SpocSubmissionStatus.SUBMITTED, detail.submissionStatus)
+        assertEquals("已提交", detail.submissionStatusText)
+        assertEquals("2026-03-11 23:40:00", detail.submittedAt)
+        assertEquals("请尽量给出自己的思考。", detail.contentPlainText)
+      }
 
   private class FakeSpocClient :
       SpocClient(

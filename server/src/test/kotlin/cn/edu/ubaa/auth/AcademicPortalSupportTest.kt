@@ -86,7 +86,9 @@ class AcademicPortalSupportTest {
         }
 
     assertEquals("研究生账号暂不支持当前本科教务接口", error.message)
-    assertNotNull(sessionManager.getSession("graduate-user", SessionManager.SessionAccess.READ_ONLY))
+    assertNotNull(
+        sessionManager.getSession("graduate-user", SessionManager.SessionAccess.READ_ONLY)
+    )
     Unit
   }
 
@@ -108,7 +110,9 @@ class AcademicPortalSupportTest {
         }
 
     assertEquals("研究生账号暂不支持当前本科考试接口", error.message)
-    assertNotNull(sessionManager.getSession("graduate-user", SessionManager.SessionAccess.READ_ONLY))
+    assertNotNull(
+        sessionManager.getSession("graduate-user", SessionManager.SessionAccess.READ_ONLY)
+    )
     Unit
   }
 
@@ -187,5 +191,6 @@ class AcademicPortalSupportTest {
     }
   }
 
-  private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+  private fun jsonHeaders() =
+      headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 }

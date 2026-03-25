@@ -1,11 +1,11 @@
 package cn.edu.ubaa.schedule
 
+import cn.edu.ubaa.auth.AcademicPortalProbeResult
+import cn.edu.ubaa.auth.AcademicPortalType
 import cn.edu.ubaa.auth.ByxtService
 import cn.edu.ubaa.auth.GlobalSessionManager
 import cn.edu.ubaa.auth.LoginException
 import cn.edu.ubaa.auth.SessionManager
-import cn.edu.ubaa.auth.AcademicPortalProbeResult
-import cn.edu.ubaa.auth.AcademicPortalType
 import cn.edu.ubaa.auth.UnsupportedAcademicPortalException
 import cn.edu.ubaa.model.dto.*
 import cn.edu.ubaa.utils.VpnCipher
@@ -189,8 +189,7 @@ class ScheduleService(
   ) {
     when (session.portalType) {
       AcademicPortalType.UNDERGRAD -> return
-      AcademicPortalType.GRADUATE ->
-          throw UnsupportedAcademicPortalException("研究生账号暂不支持当前本科教务接口")
+      AcademicPortalType.GRADUATE -> throw UnsupportedAcademicPortalException("研究生账号暂不支持当前本科教务接口")
       AcademicPortalType.UNKNOWN -> {
         when (val result = ByxtService.initializeSession(session.client)) {
           AcademicPortalProbeResult.UNDERGRAD_READY -> {
@@ -205,7 +204,8 @@ class ScheduleService(
             sessionManager.invalidateSession(username)
             throw LoginException("BYXT session expired")
           }
-          AcademicPortalProbeResult.UNAVAILABLE -> throw ScheduleException("BYXT service unavailable")
+          AcademicPortalProbeResult.UNAVAILABLE ->
+              throw ScheduleException("BYXT service unavailable")
         }
       }
     }

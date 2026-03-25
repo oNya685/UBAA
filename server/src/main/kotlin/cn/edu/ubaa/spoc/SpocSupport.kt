@@ -117,7 +117,9 @@ internal object SpocParsers {
   fun normalizeDateTime(rawValue: String?): String? {
     val normalized = rawValue?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     return runCatching {
-          OffsetDateTime.parse(normalized).atZoneSameInstant(chinaZoneId).format(legacyDateTimeFormatter)
+          OffsetDateTime.parse(normalized)
+              .atZoneSameInstant(chinaZoneId)
+              .format(legacyDateTimeFormatter)
         }
         .getOrElse { normalized.replace('T', ' ').substringBefore('.') }
   }

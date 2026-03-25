@@ -78,7 +78,8 @@ class AuthService(
       sessionManager.getSession(request.username, SessionManager.SessionAccess.READ_ONLY)?.let {
           existingSession ->
         val cachedUser = runCatching { verifySession(existingSession.client) }.getOrNull()
-        val portalState = runCatching { ByxtService.initializeSession(existingSession.client) }.getOrNull()
+        val portalState =
+            runCatching { ByxtService.initializeSession(existingSession.client) }.getOrNull()
         if (cachedUser != null && portalState?.isReady == true) {
           sessionManager.updateSessionPortalType(request.username, portalState.portalType)
           return refreshTokenService.issueLoginTokens(cachedUser, request.username)

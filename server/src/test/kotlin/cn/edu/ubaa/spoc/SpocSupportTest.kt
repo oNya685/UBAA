@@ -105,8 +105,14 @@ class SpocSupportTest {
 
   @Test
   fun `normalize datetime converts iso offset to legacy format`() {
-    assertEquals("2026-03-31 23:59:59", SpocParsers.normalizeDateTime("2026-03-31T15:59:59.000+00:00"))
-    assertEquals("2026-03-24 16:00:00", SpocParsers.normalizeDateTime("2026-03-24T08:00:00.000+00:00"))
+    assertEquals(
+        "2026-03-31 23:59:59",
+        SpocParsers.normalizeDateTime("2026-03-31T15:59:59.000+00:00"),
+    )
+    assertEquals(
+        "2026-03-24 16:00:00",
+        SpocParsers.normalizeDateTime("2026-03-24T08:00:00.000+00:00"),
+    )
     assertEquals("2026-03-24 16:00:00", SpocParsers.normalizeDateTime("2026-03-24 16:00:00"))
   }
 

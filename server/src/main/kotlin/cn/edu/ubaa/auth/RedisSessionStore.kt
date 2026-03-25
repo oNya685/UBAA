@@ -85,9 +85,9 @@ class RedisSessionStore(
           sessionMap["authenticated_at"]?.toLongOrNull() ?: return@withUserLock null
       val lastActivityMs = sessionMap["last_activity"]?.toLongOrNull() ?: return@withUserLock null
       val portalType =
-          sessionMap["portal_type"]
-              ?.let { runCatching { AcademicPortalType.valueOf(it) }.getOrNull() }
-              ?: AcademicPortalType.UNKNOWN
+          sessionMap["portal_type"]?.let {
+            runCatching { AcademicPortalType.valueOf(it) }.getOrNull()
+          } ?: AcademicPortalType.UNKNOWN
 
       SessionPersistence.SessionRecord(
           userData = UserData(name = name, schoolid = schoolid),

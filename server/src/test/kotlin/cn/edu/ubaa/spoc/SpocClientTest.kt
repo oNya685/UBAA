@@ -8,20 +8,20 @@ import cn.edu.ubaa.utils.VpnCipher
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -68,7 +68,11 @@ class SpocClientTest {
                         val bodyText = (request.body as TextContent).text
                         requestBodies += bodyText
                         val encryptedParam =
-                            json.parseToJsonElement(bodyText).jsonObject["param"]!!.jsonPrimitive.content
+                            json
+                                .parseToJsonElement(bodyText)
+                                .jsonObject["param"]!!
+                                .jsonPrimitive
+                                .content
                         val plainText = SpocCrypto.decryptParam(encryptedParam)
                         respond(
                             content =
@@ -109,16 +113,18 @@ class SpocClientTest {
       assertTrue(requestBodies.all { "\"param\"" in it })
       assertTrue(
           requestBodies.any {
-            """"pageNum":1""" in SpocCrypto.decryptParam(
-                json.parseToJsonElement(it).jsonObject["param"]!!.jsonPrimitive.content
-            )
+            """"pageNum":1""" in
+                SpocCrypto.decryptParam(
+                    json.parseToJsonElement(it).jsonObject["param"]!!.jsonPrimitive.content
+                )
           }
       )
       assertTrue(
           requestBodies.any {
-            """"pageNum":2""" in SpocCrypto.decryptParam(
-                json.parseToJsonElement(it).jsonObject["param"]!!.jsonPrimitive.content
-            )
+            """"pageNum":2""" in
+                SpocCrypto.decryptParam(
+                    json.parseToJsonElement(it).jsonObject["param"]!!.jsonPrimitive.content
+                )
           }
       )
     } finally {

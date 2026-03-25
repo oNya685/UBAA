@@ -1,11 +1,11 @@
 package cn.edu.ubaa.exam
 
-import cn.edu.ubaa.auth.GlobalSessionManager
-import cn.edu.ubaa.auth.LoginException
-import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.auth.AcademicPortalProbeResult
 import cn.edu.ubaa.auth.AcademicPortalType
 import cn.edu.ubaa.auth.ByxtService
+import cn.edu.ubaa.auth.GlobalSessionManager
+import cn.edu.ubaa.auth.LoginException
+import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.auth.UnsupportedAcademicPortalException
 import cn.edu.ubaa.model.dto.ExamArrangementData
 import cn.edu.ubaa.model.dto.ExamResponse
@@ -67,8 +67,7 @@ class ExamService(
   ) {
     when (session.portalType) {
       AcademicPortalType.UNDERGRAD -> return
-      AcademicPortalType.GRADUATE ->
-          throw UnsupportedAcademicPortalException("研究生账号暂不支持当前本科考试接口")
+      AcademicPortalType.GRADUATE -> throw UnsupportedAcademicPortalException("研究生账号暂不支持当前本科考试接口")
       AcademicPortalType.UNKNOWN -> {
         when (val result = ByxtService.initializeSession(session.client)) {
           AcademicPortalProbeResult.UNDERGRAD_READY -> {
