@@ -14,6 +14,12 @@ data class BykcSelectTimeDisplay(val label: String, val value: String)
 
 data class BykcSelectButtonState(val enabled: Boolean, val disabledReason: String? = null)
 
+data class BykcAttendanceActionState(
+    val canSignIn: Boolean,
+    val canSignOut: Boolean,
+    val disabledReason: String? = null,
+)
+
 fun formatDateTimeDisplay(dateTime: String): String {
   val parts = dateTime.split(" ")
   if (parts.size != 2) return dateTime
@@ -126,6 +132,25 @@ fun resolveBykcDisplayStatus(
   return course.status
 }
 
+fun resolveBykcAttendanceActionState(course: BykcCourseDetailDto): BykcAttendanceActionState {
+  val canSignIn = course.canSign
+  val canSignOut = course.canSignOut
+
+  val disabledReason =
+      when {
+        course.pass == 1 || course.signConfig == null || canSignIn || canSignOut -> null
+        isBykcCheckinStateBlockingAttendanceActions(course.checkin) -> "当前考勤状态不可签到/签退。"
+        isBykcCheckinStateWaitingForSignOut(course.checkin) -> "当前不在签退时间窗口内。"
+        else -> "当前不在签到时间窗口内。"
+      }
+
+  return BykcAttendanceActionState(
+      canSignIn = canSignIn,
+      canSignOut = canSignOut,
+      disabledReason = disabledReason,
+  )
+}
+
 fun parseBykcDateTime(dateTime: String?): LocalDateTime? {
   if (dateTime.isNullOrBlank()) return null
   return try {
@@ -134,6 +159,11 @@ fun parseBykcDateTime(dateTime: String?): LocalDateTime? {
     null
   }
 }
+
+private fun isBykcCheckinStateWaitingForSignOut(checkin: Int?): Boolean = checkin == 5 || checkin == 6
+
+private fun isBykcCheckinStateBlockingAttendanceActions(checkin: Int?): Boolean =
+    checkin != null && checkin != 0 && !isBykcCheckinStateWaitingForSignOut(checkin)
 
 private fun currentBykcLocalDateTime(): LocalDateTime =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())

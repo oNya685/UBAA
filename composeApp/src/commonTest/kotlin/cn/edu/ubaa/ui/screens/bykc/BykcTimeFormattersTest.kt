@@ -3,6 +3,7 @@ package cn.edu.ubaa.ui.screens.bykc
 import cn.edu.ubaa.model.dto.BykcCourseDetailDto
 import cn.edu.ubaa.model.dto.BykcCourseDto
 import cn.edu.ubaa.model.dto.BykcCourseStatus
+import cn.edu.ubaa.model.dto.BykcSignConfigDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -139,5 +140,64 @@ class BykcTimeFormattersTest {
         )
 
     assertEquals(BykcCourseStatus.FULL, status)
+  }
+
+  @Test
+  fun `resolveBykcAttendanceActionState uses server sign availability flags`() {
+    val state =
+        resolveBykcAttendanceActionState(
+            BykcCourseDetailDto(
+                id = 1L,
+                courseName = "测试课程",
+                status = BykcCourseStatus.SELECTED,
+                selected = true,
+                signConfig = BykcSignConfigDto(),
+                checkin = 0,
+                canSign = true,
+                canSignOut = false,
+            )
+        )
+
+    assertTrue(state.canSignIn)
+    assertFalse(state.canSignOut)
+    assertEquals(null, state.disabledReason)
+  }
+
+  @Test
+  fun `resolveBykcAttendanceActionState shows time window reason for pending checkin`() {
+    val state =
+        resolveBykcAttendanceActionState(
+            BykcCourseDetailDto(
+                id = 1L,
+                courseName = "测试课程",
+                status = BykcCourseStatus.SELECTED,
+                selected = true,
+                signConfig = BykcSignConfigDto(),
+                checkin = 0,
+                canSign = false,
+                canSignOut = false,
+            )
+        )
+
+    assertEquals("当前不在签到时间窗口内。", state.disabledReason)
+  }
+
+  @Test
+  fun `resolveBykcAttendanceActionState shows status reason for blocked checkin`() {
+    val state =
+        resolveBykcAttendanceActionState(
+            BykcCourseDetailDto(
+                id = 1L,
+                courseName = "测试课程",
+                status = BykcCourseStatus.SELECTED,
+                selected = true,
+                signConfig = BykcSignConfigDto(),
+                checkin = 1,
+                canSign = false,
+                canSignOut = false,
+            )
+        )
+
+    assertEquals("当前考勤状态不可签到/签退。", state.disabledReason)
   }
 }

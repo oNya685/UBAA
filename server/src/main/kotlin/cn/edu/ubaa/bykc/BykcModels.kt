@@ -128,9 +128,6 @@ data class BykcChosenCoursePayload(val courseList: List<BykcChosenCourse> = empt
 /** 操作执行结果。 */
 @Serializable data class BykcCourseActionResult(val courseCurrentCount: Int? = null)
 
-/** 签到结果。 */
-@Serializable data class BykcSignResult(val signType: Int, val result: String = "")
-
 /** 修读统计汇总数据。 */
 @Serializable
 data class BykcStatisticsData(

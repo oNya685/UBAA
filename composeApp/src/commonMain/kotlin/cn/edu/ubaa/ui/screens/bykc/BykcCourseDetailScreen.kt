@@ -20,7 +20,6 @@ import cn.edu.ubaa.model.dto.BykcCourseStatus
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.delay
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -103,32 +102,9 @@ fun BykcCourseDetailScreen(
                     now = localNow,
                 )
               }
+          val attendanceActionState = remember(course) { resolveBykcAttendanceActionState(course) }
           val canSelectCourse = selectButtonState.enabled
           val selectDisabledReason = selectButtonState.disabledReason
-
-          val canSignIn =
-              remember(
-                  course.signConfig?.signStartDate,
-                  course.signConfig?.signEndDate,
-                  now,
-                  course.checkin,
-              ) {
-                (course.checkin == 0 || course.checkin == null) &&
-                    isWithinWindow(course.signConfig?.signStartDate, course.signConfig?.signEndDate)
-              }
-          val canSignOut =
-              remember(
-                  course.signConfig?.signOutStartDate,
-                  course.signConfig?.signOutEndDate,
-                  now,
-                  course.checkin,
-              ) {
-                (course.checkin == 5 || course.checkin == 6) &&
-                    isWithinWindow(
-                        course.signConfig?.signOutStartDate,
-                        course.signConfig?.signOutEndDate,
-                    )
-              }
 
           LazyColumn(
               modifier = Modifier.fillMaxSize(),
@@ -288,7 +264,7 @@ fun BykcCourseDetailScreen(
                       Button(
                           onClick = onSignInClick,
                           modifier = Modifier.weight(1f),
-                          enabled = !operationInProgress && canSignIn,
+                          enabled = !operationInProgress && attendanceActionState.canSignIn,
                       ) {
                         Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -298,7 +274,7 @@ fun BykcCourseDetailScreen(
                       Button(
                           onClick = onSignOutClick,
                           modifier = Modifier.weight(1f),
-                          enabled = !operationInProgress && canSignOut,
+                          enabled = !operationInProgress && attendanceActionState.canSignOut,
                       ) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -312,15 +288,7 @@ fun BykcCourseDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    if (!canSignIn && !canSignOut) {
-                      val reason =
-                          when {
-                            course.checkin != 0 &&
-                                course.checkin != null &&
-                                course.checkin != 5 &&
-                                course.checkin != 6 -> "当前考勤状态不可签到/签退。"
-                            else -> "当前不在签到/签退时间窗口内。"
-                          }
+                    attendanceActionState.disabledReason?.let { reason ->
                       Text(
                           text = reason,
                           style = MaterialTheme.typography.bodySmall,
@@ -377,19 +345,6 @@ fun BykcCourseDetailScreen(
         }
       }
     }
-  }
-}
-
-@OptIn(ExperimentalTime::class)
-private fun isWithinWindow(start: String?, end: String?): Boolean {
-  if (start.isNullOrBlank() || end.isNullOrBlank()) return false
-  return try {
-    val startDt = LocalDateTime.parse(start.replace(" ", "T"))
-    val endDt = LocalDateTime.parse(end.replace(" ", "T"))
-    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    now >= startDt && now <= endDt
-  } catch (_: Exception) {
-    false
   }
 }
 
