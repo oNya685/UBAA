@@ -204,8 +204,12 @@ fun CgyyOrderDto.displayReservationDateText(): String {
     return "$startDateTime - $endDateTime"
   }
 
-  startDateTime?.let { return it }
-  dateOnly?.let { return it }
+  startDateTime?.let {
+    return it
+  }
+  dateOnly?.let {
+    return it
+  }
   return "日期待定"
 }
 
@@ -277,7 +281,8 @@ private fun String.containsExplicitDate(): Boolean =
 
 private fun String.withoutLeadingSpaceLabel(vararg labels: String?): String {
   val normalized = trim()
-  val matchedLabel = labels.mapNotNull { it.normalizedText() }.firstOrNull { normalized.startsWith(it) }
-      ?: return normalized
+  val matchedLabel =
+      labels.mapNotNull { it.normalizedText() }.firstOrNull { normalized.startsWith(it) }
+          ?: return normalized
   return normalized.removePrefix(matchedLabel).trimStart(' ', '/', '-', '>')
 }

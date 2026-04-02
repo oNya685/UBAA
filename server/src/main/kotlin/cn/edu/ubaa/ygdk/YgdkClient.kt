@@ -280,11 +280,15 @@ internal open class YgdkClient(
       var currentUrl = OAUTH_URL
       repeat(10) {
         val response = noRedirectClient.get(currentUrl)
-        extractCodeFromUrl(response.call.request.url.toString())?.let { return it }
+        extractCodeFromUrl(response.call.request.url.toString())?.let {
+          return it
+        }
         val location = response.headers[HttpHeaders.Location]
         if (location.isNullOrBlank()) return@repeat
         val nextUrl = resolveUrl(response.call.request.url.toString(), location)
-        extractCodeFromUrl(nextUrl)?.let { return it }
+        extractCodeFromUrl(nextUrl)?.let {
+          return it
+        }
         currentUrl = nextUrl
       }
     } finally {
@@ -372,11 +376,14 @@ internal open class YgdkClient(
   }
 
   private fun parseQueryValue(query: String, key: String): String? {
-    return query.split('&').mapNotNull { pair ->
-      val parts = pair.split('=', limit = 2)
-      if (parts.size != 2 || parts[0] != key) null
-      else URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name())
-    }.firstOrNull()
+    return query
+        .split('&')
+        .mapNotNull { pair ->
+          val parts = pair.split('=', limit = 2)
+          if (parts.size != 2 || parts[0] != key) null
+          else URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name())
+        }
+        .firstOrNull()
   }
 
   private fun formatFormTime(startAt: LocalDateTime, endAt: LocalDateTime): String {

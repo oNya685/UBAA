@@ -118,8 +118,15 @@ fun YgdkClockinFormScreen(
       }
 
       Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(text = "运动项目", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+              text = "运动项目",
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Bold,
+          )
           OutlinedButton(onClick = { showItemDialog = true }, modifier = Modifier.fillMaxWidth()) {
             Text(uiState.selectedItemLabel())
           }
@@ -132,8 +139,15 @@ fun YgdkClockinFormScreen(
       }
 
       Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(text = "时间", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+              text = "时间",
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Bold,
+          )
           OutlinedTextField(
               value = uiState.form.startTime,
               onValueChange = onStartTimeChange,
@@ -161,8 +175,15 @@ fun YgdkClockinFormScreen(
       }
 
       Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(text = "地点", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+              text = "地点",
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Bold,
+          )
           OutlinedTextField(
               value = uiState.form.place,
               onValueChange = onPlaceChange,
@@ -176,9 +197,19 @@ fun YgdkClockinFormScreen(
       }
 
       Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(text = "照片", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-          Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+              text = "照片",
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Bold,
+          )
+          Row(
+              horizontalArrangement = Arrangement.spacedBy(12.dp),
+              modifier = Modifier.fillMaxWidth(),
+          ) {
             OutlinedButton(onClick = imagePicker::pickImage, modifier = Modifier.weight(1f)) {
               Icon(Icons.Default.Image, contentDescription = null)
               Spacer(modifier = Modifier.padding(4.dp))
@@ -217,17 +248,21 @@ fun YgdkClockinFormScreen(
                 }
               }
             }
-          } ?: Text(
-              text = "未选择图片时会自动生成全透明图片。",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
+          }
+              ?: Text(
+                  text = "未选择图片时会自动生成全透明图片。",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
         }
       }
 
       Card(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp).clickable { onShareChange(!uiState.form.shareToSquare) },
+            modifier =
+                Modifier.fillMaxWidth().padding(16.dp).clickable {
+                  onShareChange(!uiState.form.shareToSquare)
+                },
             verticalAlignment = Alignment.CenterVertically,
         ) {
           Icon(Icons.Default.Share, contentDescription = null)
@@ -265,7 +300,9 @@ private fun YgdkItemSelectorDialog(
           items.forEach { item ->
             Row(
                 modifier =
-                    Modifier.fillMaxWidth().clickable { onSelect(item.itemId) }.padding(vertical = 4.dp),
+                    Modifier.fillMaxWidth()
+                        .clickable { onSelect(item.itemId) }
+                        .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
               Checkbox(

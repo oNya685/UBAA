@@ -165,9 +165,11 @@ class YgdkViewModel(
                     isSubmitting = false,
                     submitMessage = it.message,
                     form = YgdkFormState(),
-                    overview = _uiState.value.overview?.let { overview ->
-                      it.summary?.let { summary -> overview.copy(summary = summary) } ?: overview
-                    },
+                    overview =
+                        _uiState.value.overview?.let { overview ->
+                          it.summary?.let { summary -> overview.copy(summary = summary) }
+                              ?: overview
+                        },
                 )
             refreshAll()
             onSuccess?.invoke()

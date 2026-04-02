@@ -12,7 +12,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.contentType
 
 open class YgdkApi(private val apiClient: ApiClient = ApiClientProvider.shared) {
   open suspend fun getOverview(): Result<YgdkOverviewResponse> {

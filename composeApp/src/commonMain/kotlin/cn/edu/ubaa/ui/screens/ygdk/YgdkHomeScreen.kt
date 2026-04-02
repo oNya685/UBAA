@@ -178,11 +178,12 @@ private fun YgdkRecordCard(record: YgdkRecordDto) {
           color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
       Text(
-          text = buildString {
-            append(record.createdAtLabel ?: "提交时间未知")
-            if (record.images.isNotEmpty()) append(" · ${record.images.size} 张图片")
-            append(if (record.isOpen) " · 已分享" else " · 未分享")
-          },
+          text =
+              buildString {
+                append(record.createdAtLabel ?: "提交时间未知")
+                if (record.images.isNotEmpty()) append(" · ${record.images.size} 张图片")
+                append(if (record.isOpen) " · 已分享" else " · 未分享")
+              },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -225,7 +226,8 @@ private fun YgdkOverviewResponse?.summaryText(): String {
 private fun YgdkOverviewResponse?.weeklySummaryText(): String? {
   val summary = this?.summary ?: return null
   val weekCount = summary.weekCount ?: return null
-  return if (summary.weekTarget != null) "本周打卡 $weekCount / ${summary.weekTarget}" else "本周打卡 $weekCount 次"
+  return if (summary.weekTarget != null) "本周打卡 $weekCount / ${summary.weekTarget}"
+  else "本周打卡 $weekCount 次"
 }
 
 private fun YgdkRecordDto.displayTimeText(): String {

@@ -18,7 +18,8 @@ import javax.imageio.ImageIO
 import kotlin.random.Random
 
 private const val YGDK_ZONE_ID = "Asia/Shanghai"
-private val YGDK_DATETIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+private val YGDK_DATETIME_FORMATTER: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 private val YGDK_ISO_DATETIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
 internal data class YgdkGeneratedImage(
@@ -28,9 +29,7 @@ internal data class YgdkGeneratedImage(
 )
 
 internal open class YgdkImageGenerator(
-    private val fileNameProvider: () -> String = {
-      "ygdk_auto_${System.currentTimeMillis()}.png"
-    },
+    private val fileNameProvider: () -> String = { "ygdk_auto_${System.currentTimeMillis()}.png" },
 ) {
   open fun generate(): YgdkGeneratedImage {
     val image = BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB)
@@ -80,9 +79,10 @@ internal class YgdkService(
   suspend fun getRecords(username: String, page: Int, size: Int): YgdkRecordsPageResponse {
     if (page <= 0 || size <= 0) throw YgdkException("分页参数无效", code = "invalid_request")
     val context = resolveContext(username)
-    val records = withFreshClientRetry(username) { client ->
-      client.getRecords(context.classify.classifyId, page, size)
-    }
+    val records =
+        withFreshClientRetry(username) { client ->
+          client.getRecords(context.classify.classifyId, page, size)
+        }
     val itemMap = context.items.associateBy { it.itemId }
     return YgdkRecordsPageResponse(
         content = records.records.map { it.toDto(itemMap) },
@@ -257,8 +257,10 @@ internal class YgdkService(
   ): Pair<LocalDateTime, LocalDateTime> {
     val normalizedStart = startTime?.trim().orEmpty()
     val normalizedEnd = endTime?.trim().orEmpty()
-    if ((normalizedStart.isBlank() && normalizedEnd.isNotBlank()) ||
-        (normalizedStart.isNotBlank() && normalizedEnd.isBlank())) {
+    if (
+        (normalizedStart.isBlank() && normalizedEnd.isNotBlank()) ||
+            (normalizedStart.isNotBlank() && normalizedEnd.isBlank())
+    ) {
       throw YgdkException("开始时间和结束时间需要同时填写", code = "invalid_request")
     }
     if (normalizedStart.isBlank() && normalizedEnd.isBlank()) {
@@ -284,27 +286,26 @@ internal class YgdkService(
 
   private fun generateDefaultTimeRange(): Pair<LocalDateTime, LocalDateTime> {
     val now = nowProvider()
-    val candidateStarts =
-        buildList {
-          for (offset in 0 until DEFAULT_RANDOM_DAY_RANGE_DAYS) {
-            val date = now.toLocalDate().minusDays(offset.toLong())
-            val dayStart = LocalDateTime.of(date, LocalTime.of(8, 0))
-            val latestEnd =
-                if (offset == 0) {
-                  minOf(now, LocalDateTime.of(date, LocalTime.of(22, 0)))
-                } else {
-                  LocalDateTime.of(date, LocalTime.of(22, 0))
-                }
-            val latestStart = latestEnd.minusHours(1)
-            if (latestStart.isBefore(dayStart)) continue
-
-            var start = dayStart
-            while (!start.isAfter(latestStart)) {
-              add(start)
-              start = start.plusHours(1)
+    val candidateStarts = buildList {
+      for (offset in 0 until DEFAULT_RANDOM_DAY_RANGE_DAYS) {
+        val date = now.toLocalDate().minusDays(offset.toLong())
+        val dayStart = LocalDateTime.of(date, LocalTime.of(8, 0))
+        val latestEnd =
+            if (offset == 0) {
+              minOf(now, LocalDateTime.of(date, LocalTime.of(22, 0)))
+            } else {
+              LocalDateTime.of(date, LocalTime.of(22, 0))
             }
-          }
+        val latestStart = latestEnd.minusHours(1)
+        if (latestStart.isBefore(dayStart)) continue
+
+        var start = dayStart
+        while (!start.isAfter(latestStart)) {
+          add(start)
+          start = start.plusHours(1)
         }
+      }
+    }
     if (candidateStarts.isEmpty()) {
       val fallbackStart = LocalDateTime.of(now.toLocalDate(), LocalTime.of(8, 0))
       return fallbackStart to fallbackStart.plusHours(1)

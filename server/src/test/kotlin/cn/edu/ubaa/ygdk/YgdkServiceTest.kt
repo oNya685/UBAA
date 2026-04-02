@@ -158,7 +158,9 @@ class YgdkServiceTest {
     service.submitClockin("2418", YgdkClockinSubmitRequest())
 
     val startAt = assertNotNull(client.lastClockinStartAt)
-    assertTrue(startAt.toLocalDate() in LocalDate.parse("2026-03-30")..LocalDate.parse("2026-03-31"))
+    assertTrue(
+        startAt.toLocalDate() in LocalDate.parse("2026-03-30")..LocalDate.parse("2026-03-31")
+    )
     assertTrue(startAt.hour in 8..21)
   }
 
@@ -210,28 +212,38 @@ class YgdkServiceTest {
                   ),
               total = 1,
           ),
-      private val uploadedFile: YgdkUploadedFileRaw = YgdkUploadedFileRaw(fileName = "server-proof.png"),
+      private val uploadedFile: YgdkUploadedFileRaw =
+          YgdkUploadedFileRaw(fileName = "server-proof.png"),
       private val clockinResult: YgdkClockinResultRaw =
           YgdkClockinResultRaw(recordId = 77, termCountShow = 4, termNum = 16),
   ) : YgdkClient("2418", testSessionManager()) {
     var closed = false
       private set
+
     var uploadedBytes: ByteArray? = null
       private set
+
     var uploadedFileName: String? = null
       private set
+
     var uploadedMimeType: String? = null
       private set
+
     var lastClockinItemId: Int? = null
       private set
+
     var lastClockinItemName: String? = null
       private set
+
     var lastClockinPlace: String? = null
       private set
+
     var lastClockinOpen: Boolean = false
       private set
+
     var lastClockinStartAt: LocalDateTime? = null
       private set
+
     var lastClockinEndAt: LocalDateTime? = null
       private set
 

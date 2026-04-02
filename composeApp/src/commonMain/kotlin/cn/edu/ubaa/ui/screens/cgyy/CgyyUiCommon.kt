@@ -38,8 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cn.edu.ubaa.model.dto.CgyyOrderDisplayColor
 import cn.edu.ubaa.model.dto.CgyyOrderDto
-import cn.edu.ubaa.model.dto.displayReservationDateText
 import cn.edu.ubaa.model.dto.CgyyPurposeTypeDto
+import cn.edu.ubaa.model.dto.displayReservationDateText
 import cn.edu.ubaa.model.dto.displayStatus
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive

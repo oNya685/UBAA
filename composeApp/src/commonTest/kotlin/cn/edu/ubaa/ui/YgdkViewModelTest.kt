@@ -41,9 +41,7 @@ class YgdkViewModelTest {
         FakeYgdkApi(
             overviewResults = mutableListOf(Result.success(sampleOverview())),
             recordsResults =
-                mutableMapOf(
-                    1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = true)))
-                ),
+                mutableMapOf(1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = true)))),
         )
 
     val viewModel = YgdkViewModel(api)
@@ -105,7 +103,9 @@ class YgdkViewModelTest {
         FakeYgdkApi(
             overviewResults = mutableListOf(Result.success(sampleOverview())),
             recordsResults =
-                mutableMapOf(1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = false)))),
+                mutableMapOf(
+                    1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = false)))
+                ),
         )
     val viewModel = YgdkViewModel(api)
     advanceUntilIdle()
@@ -195,7 +195,9 @@ class YgdkViewModelTest {
         FakeYgdkApi(
             overviewResults = mutableListOf(Result.success(sampleOverview())),
             recordsResults =
-                mutableMapOf(1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = false)))),
+                mutableMapOf(
+                    1 to mutableListOf(Result.success(sampleRecordsPage(hasMore = false)))
+                ),
         )
     val viewModel = YgdkViewModel(api)
     advanceUntilIdle()
@@ -241,14 +243,14 @@ class YgdkViewModelTest {
       private val overviewResults: MutableList<Result<YgdkOverviewResponse>>,
       private val recordsResults: MutableMap<Int, MutableList<Result<YgdkRecordsPageResponse>>>,
       private val submitResult: Result<YgdkClockinSubmitResponse> =
-          Result.success(
-              YgdkClockinSubmitResponse(success = true, message = "打卡成功", recordId = 1)
-          ),
+          Result.success(YgdkClockinSubmitResponse(success = true, message = "打卡成功", recordId = 1)),
   ) : YgdkApi() {
     var submitCalls = 0
       private set
+
     var lastSubmitRequest: YgdkClockinSubmitRequest? = null
       private set
+
     val recordCallPages = mutableListOf<Int>()
 
     override suspend fun getOverview(): Result<YgdkOverviewResponse> {
@@ -265,10 +267,7 @@ class YgdkViewModelTest {
         request: YgdkClockinSubmitRequest
     ): Result<YgdkClockinSubmitResponse> {
       submitCalls++
-      val copiedPhoto =
-          request.photo?.let { photo ->
-            photo.copy(bytes = photo.bytes.copyOf())
-          }
+      val copiedPhoto = request.photo?.let { photo -> photo.copy(bytes = photo.bytes.copyOf()) }
       lastSubmitRequest = request.copy(photo = copiedPhoto)
       return submitResult
     }

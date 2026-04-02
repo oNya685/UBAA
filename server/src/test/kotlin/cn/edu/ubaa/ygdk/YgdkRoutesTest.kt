@@ -1,18 +1,18 @@
 package cn.edu.ubaa.ygdk
 
+import cn.edu.ubaa.auth.InMemoryCookieStorageFactory
+import cn.edu.ubaa.auth.InMemorySessionStore
 import cn.edu.ubaa.auth.JwtAuth
 import cn.edu.ubaa.auth.JwtErrorDetails
 import cn.edu.ubaa.auth.JwtErrorResponse
-import cn.edu.ubaa.auth.InMemoryCookieStorageFactory
-import cn.edu.ubaa.auth.InMemorySessionStore
 import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.model.dto.YgdkClockinSubmitResponse
 import cn.edu.ubaa.model.dto.YgdkOverviewResponse
-import cn.edu.ubaa.model.dto.YgdkRecordDto
 import cn.edu.ubaa.model.dto.YgdkRecordsPageResponse
-import cn.edu.ubaa.model.dto.YgdkTermSummaryDto
 import cn.edu.ubaa.utils.JwtUtil
 import com.auth0.jwt.JWT
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -30,12 +30,10 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.test.Test
@@ -158,9 +156,7 @@ class YgdkRoutesTest {
         }
       }
     }
-    routing {
-      authenticate(JwtAuth.JWT_AUTH) { ygdkRouting(service) }
-    }
+    routing { authenticate(JwtAuth.JWT_AUTH) { ygdkRouting(service) } }
   }
 
   private fun bearerToken(username: String): String {
@@ -178,20 +174,28 @@ class YgdkRoutesTest {
       ) {
     var uploadedBytes: ByteArray? = null
       private set
+
     var uploadedFileName: String? = null
       private set
+
     var uploadedMimeType: String? = null
       private set
+
     var lastClockinItemId: Int? = null
       private set
+
     var lastClockinItemName: String? = null
       private set
+
     var lastClockinPlace: String? = null
       private set
+
     var lastClockinOpen: Boolean = false
       private set
+
     var lastClockinStartAt: LocalDateTime? = null
       private set
+
     var lastClockinEndAt: LocalDateTime? = null
       private set
 
