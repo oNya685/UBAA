@@ -77,7 +77,7 @@ cp .env.sample .env
 
 | 平台        | 命令                                                | 说明                |
 | :---------- | :-------------------------------------------------- | :------------------ |
-| **Android** | `./gradlew :composeApp:installDebug`                | 连接真机或模拟器    |
+| **Android** | `./gradlew :androidApp:installDebug`                | 连接真机或模拟器    |
 | **Desktop** | `./gradlew :composeApp:run`                         | 运行桌面客户端      |
 | **Web**     | `./gradlew :composeApp:wasmJsBrowserDevelopmentRun` | 启动本地 Web 服务器 |
 | **iOS**     | 打开 `iosApp/iosApp.xcworkspace`                    | 使用 Xcode 运行     |
@@ -88,17 +88,17 @@ cp .env.sample .env
 
 项目配置通过根目录下的 `.env` 文件管理。关键配置项如下：
 
-| 配置项         | 默认值                  | 说明                           |
-| :------------- | :---------------------- | :----------------------------- |
-| `API_ENDPOINT` | `http://localhost:5432` | 客户端连接的后端地址 |
-| `SERVER_PORT` | `5432` | 服务端监听端口 |
-| `SERVER_BIND_HOST` | `0.0.0.0` | 服务端绑定地址 |
-| `JWT_SECRET` | *(需修改)* | 用于签名 access token 的密钥 |
-| `USE_VPN` | `false` | 是否通过 WebVPN 代理访问校内网 |
-| `ACCESS_TOKEN_TTL_MINUTES` | `30` | access token 有效期 |
-| `REFRESH_TOKEN_TTL_DAYS` | `7` | refresh token 有效期 |
-| `SESSION_TTL_DAYS` | `7` | Redis 会话与 Cookie 有效期 |
-| `REDIS_URI` | `redis://localhost:6379` | Redis 会话持久化地址 |
+| 配置项                     | 默认值                   | 说明                           |
+| :------------------------- | :----------------------- | :----------------------------- |
+| `API_ENDPOINT`             | `http://localhost:5432`  | 客户端连接的后端地址           |
+| `SERVER_PORT`              | `5432`                   | 服务端监听端口                 |
+| `SERVER_BIND_HOST`         | `0.0.0.0`                | 服务端绑定地址                 |
+| `JWT_SECRET`               | *(需修改)*               | 用于签名 access token 的密钥   |
+| `USE_VPN`                  | `false`                  | 是否通过 WebVPN 代理访问校内网 |
+| `ACCESS_TOKEN_TTL_MINUTES` | `30`                     | access token 有效期            |
+| `REFRESH_TOKEN_TTL_DAYS`   | `7`                      | refresh token 有效期           |
+| `SESSION_TTL_DAYS`         | `7`                      | Redis 会话与 Cookie 有效期     |
+| `REDIS_URI`                | `redis://localhost:6379` | Redis 会话持久化地址           |
 
 ---
 

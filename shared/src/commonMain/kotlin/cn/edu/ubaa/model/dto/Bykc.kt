@@ -76,6 +76,8 @@ data class BykcCourseDto(
  * @property signConfig 签到配置。
  * @property checkin 签到状态（通常 0 为未签，1 为已签）。
  * @property pass 是否通过考核。
+ * @property canSign 当前是否允许执行签到。
+ * @property canSignOut 当前是否允许执行签退。
  */
 @Serializable
 data class BykcCourseDetailDto(
@@ -100,6 +102,8 @@ data class BykcCourseDetailDto(
     val signConfig: BykcSignConfigDto? = null,
     val checkin: Int? = null,
     val pass: Int? = null,
+    val canSign: Boolean = false,
+    val canSignOut: Boolean = false,
 )
 
 /**

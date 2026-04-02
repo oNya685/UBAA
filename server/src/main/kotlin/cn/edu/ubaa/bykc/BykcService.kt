@@ -33,13 +33,20 @@ import org.slf4j.LoggerFactory
 class BykcService(
     private val sessionManager: SessionManager = GlobalSessionManager.instance,
     private val clientProvider: (String) -> BykcClient = ::BykcClient,
+    private val nowProvider: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
   private val log = LoggerFactory.getLogger(BykcService::class.java)
   private val json = Json { ignoreUnknownKeys = true }
+  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
   private data class CachedClient(
       val client: BykcClient,
       @Volatile var lastAccessAt: Long,
+  )
+
+  private data class AttendanceAvailability(
+      val canSign: Boolean,
+      val canSignOut: Boolean,
   )
 
   private val clientCache = ConcurrentHashMap<String, CachedClient>()
@@ -185,11 +192,12 @@ class BykcService(
 
     val chosenCourses =
         client.queryChosenCourse(semester.semesterStartDate!!, semester.semesterEndDate!!)
-    val now = LocalDateTime.now()
+    val now = nowProvider()
 
     return chosenCourses.map { chosen ->
       val course = chosen.courseInfo
       val signConfig = parseSignConfig(course?.courseSignConfig)
+      val availability = resolveAttendanceAvailability(signConfig, chosen.checkin, chosen.pass, now)
       BykcChosenCourseDto(
           id = chosen.id,
           courseId = course?.id ?: 0L,
@@ -205,8 +213,8 @@ class BykcService(
           checkin = chosen.checkin ?: 0,
           score = chosen.score,
           pass = chosen.pass,
-          canSign = canSign(signConfig, now),
-          canSignOut = canSignOut(signConfig, now),
+          canSign = availability.canSign,
+          canSignOut = availability.canSignOut,
           signConfig = signConfig,
           courseSignType = course?.courseSignType,
           homework = chosen.homework,
@@ -221,25 +229,23 @@ class BykcService(
     val client = getClient(username)
     val course = client.queryCourseById(courseId)
     val status = calculateCourseStatus(course)
-    val signConfig = parseSignConfig(course.courseSignConfig)
+    var signConfig = parseSignConfig(course.courseSignConfig)
+    val now = nowProvider()
 
     var checkin: Int? = null
     var pass: Int? = null
 
     if (course.selected == true) {
       try {
-        val config = client.getAllConfig()
-        val semester = config.semester.firstOrNull()
-        if (semester?.semesterStartDate != null && semester.semesterEndDate != null) {
-          val chosen =
-              client.queryChosenCourse(semester.semesterStartDate, semester.semesterEndDate).find {
-                it.courseInfo?.id == courseId
-              }
-          checkin = chosen?.checkin
-          pass = chosen?.pass
+        val chosen = findChosenCourseForCurrentSemester(client, courseId)
+        if (signConfig == null) {
+          signConfig = parseSignConfig(chosen?.courseInfo?.courseSignConfig)
         }
+        checkin = chosen?.checkin
+        pass = chosen?.pass
       } catch (_: Exception) {}
     }
+    val availability = resolveAttendanceAvailability(signConfig, checkin, pass, now)
 
     return BykcCourseDetailDto(
         id = course.id,
@@ -263,6 +269,8 @@ class BykcService(
         signConfig = signConfig,
         checkin = checkin,
         pass = pass,
+        canSign = availability.canSign,
+        canSignOut = availability.canSignOut,
     )
   }
 
@@ -271,9 +279,18 @@ class BykcService(
     return try {
       ensureBykcLogin(username)
       val client = getClient(username)
-      val signConfig = getSignConfig(client, courseId)
-      if (!canSign(signConfig, LocalDateTime.now()))
-          return Result.failure(BykcException("当前不在签到时间窗口"))
+      val chosen = findChosenCourseForCurrentSemester(client, courseId)
+      if (chosen == null) return Result.failure(BykcException("该课程未选，无法签到"))
+
+      val signConfig =
+          parseSignConfig(chosen.courseInfo?.courseSignConfig) ?: getSignConfig(client, courseId)
+      val now = nowProvider()
+      val availability = resolveAttendanceAvailability(signConfig, chosen.checkin, chosen.pass, now)
+      if (!availability.canSign) {
+        return Result.failure(
+            BykcException(resolveSignInUnavailableReason(chosen.checkin, chosen.pass))
+        )
+      }
 
       val (finalLat, finalLng) = randomSignLocation(signConfig, lat, lng)
       client.signCourse(courseId, finalLat, finalLng, 1)
@@ -293,9 +310,18 @@ class BykcService(
     return try {
       ensureBykcLogin(username)
       val client = getClient(username)
-      val signConfig = getSignConfig(client, courseId)
-      if (!canSignOut(signConfig, LocalDateTime.now()))
-          return Result.failure(BykcException("当前不在签退时间窗口"))
+      val chosen = findChosenCourseForCurrentSemester(client, courseId)
+      if (chosen == null) return Result.failure(BykcException("该课程未选，无法签退"))
+
+      val signConfig =
+          parseSignConfig(chosen.courseInfo?.courseSignConfig) ?: getSignConfig(client, courseId)
+      val now = nowProvider()
+      val availability = resolveAttendanceAvailability(signConfig, chosen.checkin, chosen.pass, now)
+      if (!availability.canSignOut) {
+        return Result.failure(
+            BykcException(resolveSignOutUnavailableReason(chosen.checkin, chosen.pass))
+        )
+      }
 
       val (finalLat, finalLng) = randomSignLocation(signConfig, lat, lng)
       client.signCourse(courseId, finalLat, finalLng, 2)
@@ -334,6 +360,20 @@ class BykcService(
 
   internal fun cachedClientForTesting(username: String): BykcClient? = clientCache[username]?.client
 
+  private suspend fun findChosenCourseForCurrentSemester(
+      client: BykcClient,
+      courseId: Long,
+  ): BykcChosenCourse? {
+    val config = client.getAllConfig()
+    val semester = config.semester.firstOrNull() ?: throw BykcException("无法获取当前学期信息")
+    val semesterStartDate = semester.semesterStartDate ?: throw BykcException("无法获取当前学期信息")
+    val semesterEndDate = semester.semesterEndDate ?: throw BykcException("无法获取当前学期信息")
+
+    return client.queryChosenCourse(semesterStartDate, semesterEndDate).find {
+      it.courseInfo?.id == courseId
+    }
+  }
+
   private suspend fun getSignConfig(client: BykcClient, courseId: Long): BykcSignConfigDto? {
     return try {
       parseSignConfig(client.queryCourseById(courseId).courseSignConfig)
@@ -359,27 +399,11 @@ class BykcService(
   }
 
   private fun canSign(signConfig: BykcSignConfigDto?, now: LocalDateTime): Boolean {
-    if (signConfig == null) return false
-    val f = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    return try {
-      val s = signConfig.signStartDate?.let { LocalDateTime.parse(it, f) }
-      val e = signConfig.signEndDate?.let { LocalDateTime.parse(it, f) }
-      s != null && e != null && now.isAfter(s) && now.isBefore(e)
-    } catch (_: Exception) {
-      false
-    }
+    return isWithinWindow(signConfig?.signStartDate, signConfig?.signEndDate, now)
   }
 
   private fun canSignOut(signConfig: BykcSignConfigDto?, now: LocalDateTime): Boolean {
-    if (signConfig == null) return false
-    val f = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    return try {
-      val s = signConfig.signOutStartDate?.let { LocalDateTime.parse(it, f) }
-      val e = signConfig.signOutEndDate?.let { LocalDateTime.parse(it, f) }
-      s != null && e != null && now.isAfter(s) && now.isBefore(e)
-    } catch (_: Exception) {
-      false
-    }
+    return isWithinWindow(signConfig?.signOutStartDate, signConfig?.signOutEndDate, now)
   }
 
   /** 随机坐标生成：在合法的签到半径内随机化，提高安全性。 */
@@ -414,12 +438,11 @@ class BykcService(
 
   /** 根据课程时间配置计算课程状态。 */
   private fun calculateCourseStatus(course: BykcCourse): BykcCourseStatusEnum {
-    val now = LocalDateTime.now()
-    val f = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val now = nowProvider()
     return try {
-      val cs = course.courseStartDate?.let { LocalDateTime.parse(it, f) }
-      val ss = course.courseSelectStartDate?.let { LocalDateTime.parse(it, f) }
-      val se = course.courseSelectEndDate?.let { LocalDateTime.parse(it, f) }
+      val cs = parseDateTime(course.courseStartDate)
+      val ss = parseDateTime(course.courseSelectStartDate)
+      val se = parseDateTime(course.courseSelectEndDate)
       when {
         cs != null && now.isAfter(cs) -> BykcCourseStatusEnum.EXPIRED
         course.selected == true -> BykcCourseStatusEnum.SELECTED
@@ -431,6 +454,54 @@ class BykcService(
       }
     } catch (_: Exception) {
       BykcCourseStatusEnum.AVAILABLE
+    }
+  }
+
+  private fun resolveAttendanceAvailability(
+      signConfig: BykcSignConfigDto?,
+      checkin: Int?,
+      pass: Int?,
+      now: LocalDateTime,
+  ): AttendanceAvailability {
+    val canSign = pass != 1 && isUnsignedCheckin(checkin) && canSign(signConfig, now)
+    val canSignOut = pass != 1 && isSignedAwaitingSignOut(checkin) && canSignOut(signConfig, now)
+    return AttendanceAvailability(canSign = canSign, canSignOut = canSignOut)
+  }
+
+  private fun resolveSignInUnavailableReason(checkin: Int?, pass: Int?): String =
+      when {
+        pass == 1 -> "课程已考核完成，无需签到"
+        !isUnsignedCheckin(checkin) -> "当前考勤状态不可签到"
+        else -> "当前不在签到时间窗口"
+      }
+
+  private fun resolveSignOutUnavailableReason(checkin: Int?, pass: Int?): String =
+      when {
+        pass == 1 -> "课程已考核完成，无需签退"
+        !isSignedAwaitingSignOut(checkin) -> "当前考勤状态不可签退"
+        else -> "当前不在签退时间窗口"
+      }
+
+  private fun isUnsignedCheckin(checkin: Int?): Boolean = checkin == null || checkin == 0
+
+  private fun isSignedAwaitingSignOut(checkin: Int?): Boolean = checkin == 5 || checkin == 6
+
+  private fun isWithinWindow(
+      startDate: String?,
+      endDate: String?,
+      now: LocalDateTime,
+  ): Boolean {
+    val start = parseDateTime(startDate) ?: return false
+    val end = parseDateTime(endDate) ?: return false
+    return !now.isBefore(start) && !now.isAfter(end)
+  }
+
+  private fun parseDateTime(dateTime: String?): LocalDateTime? {
+    if (dateTime.isNullOrBlank()) return null
+    return try {
+      LocalDateTime.parse(dateTime, dateTimeFormatter)
+    } catch (_: Exception) {
+      null
     }
   }
 

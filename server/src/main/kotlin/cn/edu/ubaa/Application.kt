@@ -18,6 +18,9 @@ import cn.edu.ubaa.signin.signinRouting
 import cn.edu.ubaa.spoc.GlobalSpocService
 import cn.edu.ubaa.spoc.spocRouting
 import cn.edu.ubaa.user.userRouting
+import cn.edu.ubaa.utils.HeadlessImageSupport
+import cn.edu.ubaa.ygdk.GlobalYgdkService
+import cn.edu.ubaa.ygdk.ygdkRouting
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -46,6 +49,7 @@ import org.slf4j.event.Level
 
 /** 后端服务入口函数。 负责加载环境变量、配置服务器端口并启动 Netty 引擎。 */
 fun main() {
+  HeadlessImageSupport.ensureConfigured()
   val dotenv = dotenv { ignoreIfMissing = true }
   val serverPort = dotenv["SERVER_PORT"]?.toInt() ?: 5432
   val serverHost = dotenv["SERVER_BIND_HOST"] ?: "0.0.0.0"
@@ -87,7 +91,8 @@ fun Application.module() {
   val bykcService = GlobalBykcService.instance
   val cgyyService = GlobalCgyyService.instance
   val spocService = GlobalSpocService.instance
-  registerPerformanceGauges(sessionManager, bykcService, cgyyService, spocService)
+  val ygdkService = GlobalYgdkService.instance
+  registerPerformanceGauges(sessionManager, bykcService, cgyyService, spocService, ygdkService)
 
   val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   cleanupScope.launch {
@@ -99,22 +104,25 @@ fun Application.module() {
       val expiredBykcClients = bykcService.cleanupExpiredClients()
       val expiredCgyyClients = cgyyService.cleanupExpiredClients()
       val expiredSpocClients = spocService.cleanupExpiredClients()
+      val expiredYgdkClients = ygdkService.cleanupExpiredClients()
       if (
           expiredSessions +
               expiredPreLogin +
               expiredSigninClients +
               expiredBykcClients +
               expiredCgyyClients +
-              expiredSpocClients > 0
+              expiredSpocClients +
+              expiredYgdkClients > 0
       ) {
         log.info(
-            "Cleanup removed sessions={}, prelogin={}, signinClients={}, bykcClients={}, cgyyClients={}, spocClients={}",
+            "Cleanup removed sessions={}, prelogin={}, signinClients={}, bykcClients={}, cgyyClients={}, spocClients={}, ygdkClients={}",
             expiredSessions,
             expiredPreLogin,
             expiredSigninClients,
             expiredBykcClients,
             expiredCgyyClients,
             expiredSpocClients,
+            expiredYgdkClients,
         )
       }
     }
@@ -126,6 +134,7 @@ fun Application.module() {
     bykcService.clearCache()
     cgyyService.clearCache()
     spocService.clearCache()
+    ygdkService.clearCache()
     sessionManager.close()
     GlobalRefreshTokenService.instance.close()
   }
@@ -146,6 +155,7 @@ fun Application.module() {
       cgyyRouting()
       evaluationRouting()
       spocRouting()
+      ygdkRouting()
     }
 
     get("/") { call.respondText("Ktor: ${Greeting().greet()}") }
@@ -158,6 +168,7 @@ private fun registerPerformanceGauges(
     bykcService: cn.edu.ubaa.bykc.BykcService,
     cgyyService: cn.edu.ubaa.cgyy.CgyyService,
     spocService: cn.edu.ubaa.spoc.SpocService,
+    ygdkService: cn.edu.ubaa.ygdk.YgdkService,
 ) {
   Gauge.builder("ubaa.sessions.active") { sessionManager.activeSessionCount().toDouble() }
       .register(appMicrometerRegistry)
@@ -170,5 +181,7 @@ private fun registerPerformanceGauges(
   Gauge.builder("ubaa.cgyy.cache") { cgyyService.cacheSize().toDouble() }
       .register(appMicrometerRegistry)
   Gauge.builder("ubaa.spoc.cache") { spocService.cacheSize().toDouble() }
+      .register(appMicrometerRegistry)
+  Gauge.builder("ubaa.ygdk.cache") { ygdkService.cacheSize().toDouble() }
       .register(appMicrometerRegistry)
 }

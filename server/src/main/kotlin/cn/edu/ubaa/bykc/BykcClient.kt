@@ -11,6 +11,7 @@ import io.ktor.http.*
 import java.util.Base64
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import org.slf4j.LoggerFactory
 
 /**
@@ -330,17 +331,15 @@ open class BykcClient(private val username: String) {
       lat: Double,
       lng: Double,
       signType: Int,
-  ): BykcApiResponse<BykcSignResult> {
+  ) {
 
     val req = "{\"courseId\":$courseId,\"signLat\":$lat,\"signLng\":$lng,\"signType\":$signType}"
 
     val raw = callApiRaw("signCourseByUser", req)
 
-    val apiResp = json.decodeFromString<BykcApiResponse<BykcSignResult>>(raw)
+    val apiResp = parseBykcSignCourseResponse(raw, json)
 
     if (!apiResp.isSuccess) throw BykcException("签到失败: ${apiResp.errmsg}")
-
-    return apiResp
   }
 
   /**
@@ -365,3 +364,8 @@ open class BykcClient(private val username: String) {
     lastLoginMillis = 0L
   }
 }
+
+internal fun parseBykcSignCourseResponse(
+    raw: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): BykcApiResponse<JsonElement> = json.decodeFromString(raw)
