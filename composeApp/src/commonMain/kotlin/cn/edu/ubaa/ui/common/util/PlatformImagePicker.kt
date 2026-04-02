@@ -28,5 +28,6 @@ expect fun rememberPlatformImagePicker(
 fun formatImageSize(bytes: Int): String {
   if (bytes < 1024) return "${bytes}B"
   if (bytes < 1024 * 1024) return "${bytes / 1024}KB"
-  return String.format("%.1fMB", bytes / 1024f / 1024f)
+  val tenthsOfMb = ((bytes.toLong() * 10) + (1024L * 1024L / 2)) / (1024L * 1024L)
+  return "${tenthsOfMb / 10}.${tenthsOfMb % 10}MB"
 }
