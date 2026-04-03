@@ -43,10 +43,11 @@ class LoginStatsStoreTest {
     val store = InMemoryLoginStatsStore()
     val now = Instant.parse("2026-04-02T08:15:00Z")
 
-    repeat(3) { store.recordLogin("2333", now) }
+    repeat(3) { store.recordLogin("2333", LoginSuccessMode.MANUAL, now) }
 
     assertEquals(3L, store.countEvents(LoginMetricWindow.ONE_HOUR, now))
     assertEquals(1L, store.countUniqueUsers(LoginMetricWindow.ONE_HOUR, now))
+    assertEquals(3L, store.countSuccessTotal(LoginSuccessMode.MANUAL))
   }
 
   @Test
@@ -54,12 +55,14 @@ class LoginStatsStoreTest {
     val store = InMemoryLoginStatsStore()
     val now = Instant.parse("2026-04-02T08:15:00Z")
 
-    store.recordLogin("2333", now.minusSeconds(2 * 3600))
-    store.recordLogin("2333", now)
-    store.recordLogin("2444", now.minusSeconds(3600))
+    store.recordLogin("2333", LoginSuccessMode.MANUAL, now.minusSeconds(2 * 3600))
+    store.recordLogin("2333", LoginSuccessMode.MANUAL, now)
+    store.recordLogin("2444", LoginSuccessMode.PRELOAD_AUTO, now.minusSeconds(3600))
 
     assertEquals(3L, store.countEvents(LoginMetricWindow.TWENTY_FOUR_HOURS, now))
     assertEquals(2L, store.countUniqueUsers(LoginMetricWindow.TWENTY_FOUR_HOURS, now))
+    assertEquals(2L, store.countSuccessTotal(LoginSuccessMode.MANUAL))
+    assertEquals(1L, store.countSuccessTotal(LoginSuccessMode.PRELOAD_AUTO))
   }
 
   @Test
@@ -67,10 +70,12 @@ class LoginStatsStoreTest {
     val store = InMemoryLoginStatsStore()
     val now = Instant.parse("2026-04-02T08:15:00Z")
 
-    store.recordLogin("2333", now.minusSeconds(31 * 24 * 3600))
-    store.recordLogin("2444", now)
+    store.recordLogin("2333", LoginSuccessMode.MANUAL, now.minusSeconds(31 * 24 * 3600))
+    store.recordLogin("2444", LoginSuccessMode.PRELOAD_AUTO, now)
 
     assertEquals(1L, store.countEvents(LoginMetricWindow.THIRTY_DAYS, now))
     assertEquals(1L, store.countUniqueUsers(LoginMetricWindow.THIRTY_DAYS, now))
+    assertEquals(1L, store.countSuccessTotal(LoginSuccessMode.MANUAL))
+    assertEquals(1L, store.countSuccessTotal(LoginSuccessMode.PRELOAD_AUTO))
   }
 }

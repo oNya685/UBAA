@@ -1,6 +1,7 @@
 package cn.edu.ubaa.version
 
 import cn.edu.ubaa.api.AppVersionCheckResponse
+import cn.edu.ubaa.metrics.AppObservability
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -100,7 +101,12 @@ internal class ProxyReleaseNotesFetcher(
   override suspend fun fetchReleaseNotes(serverVersion: String): String? {
     for (tag in tagCandidates(serverVersion)) {
       val response =
-          runCatching { client.get("$releasesBaseUrl/tags/$tag") }.getOrNull() ?: continue
+          runCatching {
+                AppObservability.observeUpstreamRequest("release_proxy", "fetch_release_notes") {
+                  client.get("$releasesBaseUrl/tags/$tag")
+                }
+              }
+              .getOrNull() ?: continue
       if (response.status != HttpStatusCode.OK) continue
 
       val release = runCatching { response.body<ReleaseProxyResponse>() }.getOrNull() ?: continue
