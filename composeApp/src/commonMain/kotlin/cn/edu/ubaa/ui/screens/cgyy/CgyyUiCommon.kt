@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import cn.edu.ubaa.model.dto.CgyyOrderDisplayColor
 import cn.edu.ubaa.model.dto.CgyyOrderDto
 import cn.edu.ubaa.model.dto.CgyyPurposeTypeDto
+import cn.edu.ubaa.model.dto.canCancelAt
 import cn.edu.ubaa.model.dto.displayReservationDateText
 import cn.edu.ubaa.model.dto.displayStatus
 import kotlinx.serialization.json.JsonElement
@@ -46,7 +47,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 internal fun shouldShowCancelAction(order: CgyyOrderDto): Boolean =
-    order.displayStatus().isCancelable
+    order.canCancelAt()
 
 @Composable
 internal fun CgyyOrderDisplayColor.toComposeColor(): Color =
