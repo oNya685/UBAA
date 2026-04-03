@@ -5,6 +5,7 @@ import cn.edu.ubaa.auth.ErrorResponse
 import cn.edu.ubaa.auth.JwtAuth.jwtUsername
 import cn.edu.ubaa.model.dto.YgdkClockinSubmitRequest
 import cn.edu.ubaa.model.dto.YgdkPhotoUpload
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
@@ -24,6 +25,8 @@ internal fun Route.ygdkRouting(ygdkService: YgdkService = GlobalYgdkService.inst
       val username = call.jwtUsername!!
       try {
         call.respond(HttpStatusCode.OK, ygdkService.getOverview(username))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: YgdkException) {
         call.respondYgdkError(e)
       }
@@ -35,6 +38,8 @@ internal fun Route.ygdkRouting(ygdkService: YgdkService = GlobalYgdkService.inst
       val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 20
       try {
         call.respond(HttpStatusCode.OK, ygdkService.getRecords(username, page, size))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: YgdkException) {
         call.respondYgdkError(e)
       }
@@ -53,6 +58,8 @@ internal fun Route.ygdkRouting(ygdkService: YgdkService = GlobalYgdkService.inst
           }
       try {
         call.respond(HttpStatusCode.OK, ygdkService.submitClockin(username, request))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: YgdkException) {
         call.respondYgdkError(e)
       }
@@ -113,4 +120,11 @@ private suspend fun ApplicationCall.respondYgdkError(e: YgdkException) {
         else -> HttpStatusCode.BadGateway
       }
   respond(status, ErrorResponse(ErrorDetails(e.code, e.message ?: "阳光打卡请求失败")))
+}
+
+private suspend fun ApplicationCall.respondUpstreamTimeout(e: UpstreamTimeoutException) {
+  respond(
+      HttpStatusCode.GatewayTimeout,
+      ErrorResponse(ErrorDetails(e.code, e.message ?: "阳光打卡请求超时")),
+  )
 }

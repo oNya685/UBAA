@@ -14,6 +14,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -109,6 +111,43 @@ class AuthServiceLoginMetricsTest {
 
     assertNotNull(refreshed)
     assertTrue(sink.records.isEmpty())
+  }
+
+  @Test
+  fun loginSucceedsWhenPortalWarmupFallsBackToUnavailable() = runBlocking {
+    val sink = RecordingLoginMetricsSink()
+    val sessionManager = createSessionManager(::successfulManualLoginClient)
+    val refreshTokenService = RefreshTokenService(refreshTokenStore = InMemoryRefreshTokenStore())
+    val portalWarmupCoordinator =
+        AcademicPortalWarmupCoordinator(
+            sessionManager = sessionManager,
+            portalProbe = { AcademicPortalProbeResult.UNAVAILABLE },
+            scope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+    val authService = AuthService(sessionManager, refreshTokenService, sink, portalWarmupCoordinator)
+
+    val response = authService.login(LoginRequest(username = "2333", password = "secret"))
+
+    assertEquals("2333", response.user.schoolid)
+    assertEquals(listOf(LoginRecord("2333", LoginSuccessMode.MANUAL)), sink.records)
+  }
+
+  @Test
+  fun validateSessionOnlyDependsOnUcState() = runBlocking {
+    val sessionManager = createSessionManager(::successfulManualLoginClient)
+    val refreshTokenService = RefreshTokenService(refreshTokenStore = InMemoryRefreshTokenStore())
+    val portalWarmupCoordinator =
+        AcademicPortalWarmupCoordinator(
+            sessionManager = sessionManager,
+            portalProbe = { AcademicPortalProbeResult.UNAVAILABLE },
+            scope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+    val authService = AuthService(sessionManager, refreshTokenService, portalWarmupCoordinator = portalWarmupCoordinator)
+
+    val candidate = sessionManager.prepareSession("2333")
+    val session = sessionManager.commitSession(candidate, UserData(name = "Alice", schoolid = "2333"))
+
+    assertTrue(authService.validateSession(session))
   }
 
   private fun createAuthService(

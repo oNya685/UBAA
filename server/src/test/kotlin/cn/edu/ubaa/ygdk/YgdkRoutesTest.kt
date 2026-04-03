@@ -9,6 +9,7 @@ import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.model.dto.YgdkClockinSubmitResponse
 import cn.edu.ubaa.model.dto.YgdkOverviewResponse
 import cn.edu.ubaa.model.dto.YgdkRecordsPageResponse
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import cn.edu.ubaa.utils.JwtUtil
 import com.auth0.jwt.JWT
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -137,6 +138,31 @@ class YgdkRoutesTest {
     assertEquals(ContentType.Image.PNG.toString(), fakeClient.uploadedMimeType)
   }
 
+  @Test
+  fun `GET overview returns gateway timeout when upstream is too slow`() = testApplication {
+    application {
+      testYgdkApp(
+          YgdkService(
+              clientProvider = {
+                object : RouteFakeYgdkClient() {
+                  override suspend fun getClassifyList(): List<YgdkClassifyRaw> {
+                    throw UpstreamTimeoutException("阳光打卡概览加载超时", "ygdk_timeout")
+                  }
+                }
+              }
+          )
+      )
+    }
+
+    val response =
+        client.get("/api/v1/ygdk/overview") {
+          header(HttpHeaders.Authorization, bearerToken("2418"))
+        }
+
+    assertEquals(HttpStatusCode.GatewayTimeout, response.status)
+    assertTrue(response.bodyAsText().contains("ygdk_timeout"))
+  }
+
   private fun Application.testYgdkApp(service: YgdkService) {
     install(ContentNegotiation) { json() }
     install(Authentication) {
@@ -163,7 +189,7 @@ class YgdkRoutesTest {
     return "Bearer ${JwtUtil.generateToken(username, Duration.ofMinutes(30))}"
   }
 
-  private class RouteFakeYgdkClient :
+  private open class RouteFakeYgdkClient :
       YgdkClient(
           username = "2418",
           sessionManager =

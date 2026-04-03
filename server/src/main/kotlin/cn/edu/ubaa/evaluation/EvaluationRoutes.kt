@@ -4,6 +4,7 @@ import cn.edu.ubaa.auth.ErrorDetails
 import cn.edu.ubaa.auth.ErrorResponse
 import cn.edu.ubaa.auth.JwtAuth.jwtUsername
 import cn.edu.ubaa.model.evaluation.EvaluationCourse
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -25,6 +26,11 @@ fun Route.evaluationRouting() {
       try {
         val response = evaluationService.getAllCourses(username)
         call.respond(HttpStatusCode.OK, response)
+      } catch (e: UpstreamTimeoutException) {
+        call.respond(
+            HttpStatusCode.GatewayTimeout,
+            ErrorResponse(ErrorDetails(e.code, e.message ?: "Evaluation request timed out")),
+        )
       } catch (e: Exception) {
         log.error("Failed to fetch evaluation list for $username", e)
         call.respond(

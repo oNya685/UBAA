@@ -1,6 +1,7 @@
 package cn.edu.ubaa
 
 import cn.edu.ubaa.auth.GlobalRefreshTokenService
+import cn.edu.ubaa.auth.GlobalAcademicPortalWarmupCoordinator
 import cn.edu.ubaa.auth.GlobalSessionManager
 import cn.edu.ubaa.auth.JwtAuth
 import cn.edu.ubaa.auth.JwtAuth.configureJwtAuth
@@ -152,6 +153,7 @@ internal fun Application.module(
     cgyyService.clearCache()
     spocService.clearCache()
     ygdkService.clearCache()
+    GlobalAcademicPortalWarmupCoordinator.instance.close()
     sessionManager.close()
     GlobalRefreshTokenService.instance.close()
     loginMetricsRecorder.close()

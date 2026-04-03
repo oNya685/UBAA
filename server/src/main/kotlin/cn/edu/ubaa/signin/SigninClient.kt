@@ -14,6 +14,8 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
 
 /**
@@ -45,29 +47,37 @@ class SigninClient(private val studentId: String) {
 
   private var userId: String? = null
   private var sessionId: String? = null
+  private val loginMutex = Mutex()
 
   /** 执行 iclass 登录。目前 iclass 支持学号直接登录（无密码模式或特定逻辑）。 */
   private suspend fun login(): Boolean {
-    return try {
-      val response =
-          client.get(VpnCipher.toVpnUrl("https://iclass.buaa.edu.cn:8347/app/user/login.action")) {
-            parameter("password", "")
-            parameter("phone", studentId)
-            parameter("userLevel", "1")
-            parameter("verificationType", "2")
-            parameter("verificationUrl", "")
-          }
-      if (!response.status.isSuccess()) return false
-      val body = response.bodyAsText()
-      val jsonResponse = json.parseToJsonElement(body).jsonObject
-      if (jsonResponse["STATUS"]?.jsonPrimitive?.intOrNull != 0) return false
+    if (userId != null && sessionId != null) return true
+    return loginMutex.withLock {
+      if (userId != null && sessionId != null) return@withLock true
 
-      val result = jsonResponse["result"]?.jsonObject
-      userId = result?.get("id")?.jsonPrimitive?.content
-      sessionId = result?.get("sessionId")?.jsonPrimitive?.content
-      userId != null && sessionId != null
-    } catch (_: Exception) {
-      false
+      try {
+        val response =
+            client.get(
+                VpnCipher.toVpnUrl("https://iclass.buaa.edu.cn:8347/app/user/login.action")
+            ) {
+              parameter("password", "")
+              parameter("phone", studentId)
+              parameter("userLevel", "1")
+              parameter("verificationType", "2")
+              parameter("verificationUrl", "")
+            }
+        if (!response.status.isSuccess()) return@withLock false
+        val body = response.bodyAsText()
+        val jsonResponse = json.parseToJsonElement(body).jsonObject
+        if (jsonResponse["STATUS"]?.jsonPrimitive?.intOrNull != 0) return@withLock false
+
+        val result = jsonResponse["result"]?.jsonObject
+        userId = result?.get("id")?.jsonPrimitive?.content
+        sessionId = result?.get("sessionId")?.jsonPrimitive?.content
+        userId != null && sessionId != null
+      } catch (_: Exception) {
+        false
+      }
     }
   }
 

@@ -8,7 +8,9 @@ import cn.edu.ubaa.model.dto.BykcCoursesResponse
 import cn.edu.ubaa.model.dto.BykcSignRequest
 import cn.edu.ubaa.model.dto.BykcSuccessResponse
 import cn.edu.ubaa.model.dto.BykcUserProfileDto
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import io.ktor.http.*
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -40,24 +42,13 @@ fun Route.bykcRouting() {
             )
         call.respond(HttpStatusCode.OK, profileDto)
       } catch (e: LoginException) {
-        call.respond(
-            HttpStatusCode.Unauthorized,
-            ErrorResponse(
-                ErrorDetails("unauthenticated", e.message ?: "Session is not available.")
-            ),
-        )
+        call.respondBykcError(e)
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
       } catch (e: BykcException) {
-        call.respond(
-            HttpStatusCode.BadGateway,
-            ErrorResponse(ErrorDetails("bykc_error", e.message ?: "Failed to fetch BYKC profile.")),
-        )
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(
-                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
-            ),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -96,11 +87,14 @@ fun Route.bykcRouting() {
                 pageSize = coursePage.pageSize,
             ),
         )
+      } catch (e: LoginException) {
+        call.respondBykcError(e)
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
+      } catch (e: BykcException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_server_error", e.message ?: "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -110,11 +104,14 @@ fun Route.bykcRouting() {
       try {
         val statistics = bykcService.getStatistics(username)
         call.respond(HttpStatusCode.OK, statistics)
+      } catch (e: LoginException) {
+        call.respondBykcError(e)
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
+      } catch (e: BykcException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_server_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -144,11 +141,10 @@ fun Route.bykcRouting() {
                   )
                 },
             )
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -171,11 +167,10 @@ fun Route.bykcRouting() {
                   )
                 },
             )
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -185,11 +180,14 @@ fun Route.bykcRouting() {
       try {
         val chosenCourses = bykcService.getChosenCourses(username)
         call.respond(HttpStatusCode.OK, chosenCourses)
+      } catch (e: LoginException) {
+        call.respondBykcError(e)
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
+      } catch (e: BykcException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -202,11 +200,14 @@ fun Route.bykcRouting() {
       try {
         val courseDetail = bykcService.getCourseDetail(username, courseId)
         call.respond(HttpStatusCode.OK, courseDetail)
+      } catch (e: LoginException) {
+        call.respondBykcError(e)
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
+      } catch (e: BykcException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
 
@@ -243,12 +244,30 @@ fun Route.bykcRouting() {
               )
             },
         )
+      } catch (e: UpstreamTimeoutException) {
+        call.respondBykcError(e)
       } catch (e: Exception) {
-        call.respond(
-            HttpStatusCode.InternalServerError,
-            ErrorResponse(ErrorDetails("internal_error", "Error")),
-        )
+        call.respondBykcError(e)
       }
     }
   }
+}
+
+private suspend fun ApplicationCall.respondBykcError(error: Throwable) {
+  val (status, details) =
+      when (error) {
+        is LoginException ->
+            HttpStatusCode.Unauthorized to
+                ErrorDetails("unauthenticated", error.message ?: "Session is not available.")
+        is UpstreamTimeoutException ->
+            HttpStatusCode.GatewayTimeout to
+                ErrorDetails(error.code, error.message ?: "BYKC request timed out.")
+        is BykcException ->
+            HttpStatusCode.BadGateway to
+                ErrorDetails("bykc_error", error.message ?: "BYKC request failed.")
+        else ->
+            HttpStatusCode.InternalServerError to
+                ErrorDetails("internal_server_error", "An unexpected server error occurred.")
+      }
+  respond(status, ErrorResponse(details))
 }

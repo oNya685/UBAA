@@ -3,6 +3,7 @@ package cn.edu.ubaa.spoc
 import cn.edu.ubaa.auth.ErrorDetails
 import cn.edu.ubaa.auth.ErrorResponse
 import cn.edu.ubaa.auth.JwtAuth.requireUserSession
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
@@ -44,6 +45,11 @@ fun Route.spocRouting() {
 private suspend fun ApplicationCall.runSpocCall(block: suspend () -> Unit) {
   try {
     block()
+  } catch (e: UpstreamTimeoutException) {
+    respond(
+        HttpStatusCode.GatewayTimeout,
+        ErrorResponse(ErrorDetails(e.code, e.message ?: "SPOC request timed out")),
+    )
   } catch (e: SpocAuthenticationException) {
     respond(
         HttpStatusCode.BadGateway,

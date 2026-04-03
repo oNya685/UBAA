@@ -4,6 +4,7 @@ import cn.edu.ubaa.auth.ErrorDetails
 import cn.edu.ubaa.auth.ErrorResponse
 import cn.edu.ubaa.auth.JwtAuth.jwtUsername
 import cn.edu.ubaa.model.dto.CgyyReservationSubmitRequest
+import cn.edu.ubaa.utils.UpstreamTimeoutException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
@@ -22,6 +23,8 @@ fun Route.cgyyRouting() {
       val username = call.jwtUsername!!
       try {
         call.respond(HttpStatusCode.OK, cgyyService.getVenueSites(username))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: CgyyException) {
         call.respondCgyyError(e)
       }
@@ -31,6 +34,8 @@ fun Route.cgyyRouting() {
       val username = call.jwtUsername!!
       try {
         call.respond(HttpStatusCode.OK, cgyyService.getPurposeTypes(username))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: CgyyException) {
         call.respondCgyyError(e)
       }
@@ -52,6 +57,8 @@ fun Route.cgyyRouting() {
               )
       try {
         call.respond(HttpStatusCode.OK, cgyyService.getDayInfo(username, venueSiteId, date))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: CgyyException) {
         call.respondCgyyError(e)
       }
@@ -70,6 +77,8 @@ fun Route.cgyyRouting() {
           }
       try {
         call.respond(HttpStatusCode.OK, cgyyService.submitReservation(username, request))
+      } catch (e: UpstreamTimeoutException) {
+        call.respondUpstreamTimeout(e)
       } catch (e: CgyyException) {
         call.respondCgyyError(e)
       }
@@ -80,6 +89,8 @@ fun Route.cgyyRouting() {
         val username = call.jwtUsername!!
         try {
           call.respond(HttpStatusCode.OK, cgyyService.getLockCode(username))
+        } catch (e: UpstreamTimeoutException) {
+          call.respondUpstreamTimeout(e)
         } catch (e: CgyyException) {
           call.respondCgyyError(e)
         }
@@ -91,6 +102,8 @@ fun Route.cgyyRouting() {
         val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 20
         try {
           call.respond(HttpStatusCode.OK, cgyyService.getOrders(username, page, size))
+        } catch (e: UpstreamTimeoutException) {
+          call.respondUpstreamTimeout(e)
         } catch (e: CgyyException) {
           call.respondCgyyError(e)
         }
@@ -106,6 +119,8 @@ fun Route.cgyyRouting() {
                 )
         try {
           call.respond(HttpStatusCode.OK, cgyyService.getOrderDetail(username, orderId))
+        } catch (e: UpstreamTimeoutException) {
+          call.respondUpstreamTimeout(e)
         } catch (e: CgyyException) {
           call.respondCgyyError(e)
         }
@@ -121,6 +136,8 @@ fun Route.cgyyRouting() {
                 )
         try {
           call.respond(HttpStatusCode.OK, cgyyService.cancelOrder(username, orderId))
+        } catch (e: UpstreamTimeoutException) {
+          call.respondUpstreamTimeout(e)
         } catch (e: CgyyException) {
           call.respondCgyyError(e)
         }
@@ -140,4 +157,11 @@ private suspend fun ApplicationCall.respondCgyyError(e: CgyyException) {
         else -> HttpStatusCode.BadGateway
       }
   respond(status, ErrorResponse(ErrorDetails(e.code, e.message ?: "研讨室请求失败")))
+}
+
+private suspend fun ApplicationCall.respondUpstreamTimeout(e: UpstreamTimeoutException) {
+  respond(
+      HttpStatusCode.GatewayTimeout,
+      ErrorResponse(ErrorDetails(e.code, e.message ?: "研讨室请求超时")),
+  )
 }
