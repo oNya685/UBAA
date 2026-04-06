@@ -85,6 +85,8 @@ compose.desktop {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
       packageName = "UBAA"
       packageVersion = project.property("project.version").toString()
+      macOS { iconFile = project.file("icons/app.icns") }
+      linux { iconFile = project.file("icons/app.png") }
 
       buildTypes.release.proguard {
         isEnabled.set(false)
@@ -93,6 +95,7 @@ compose.desktop {
       }
 
       windows {
+        iconFile = project.file("icons/app.ico")
         menu = true
         shortcut = true
         perUserInstall = false

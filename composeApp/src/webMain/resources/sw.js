@@ -1,11 +1,14 @@
-const SHELL_CACHE = 'ubaa-shell-v1';
-const STATIC_CACHE = 'ubaa-static-v1';
+const SHELL_CACHE = 'ubaa-shell-v2';
+const STATIC_CACHE = 'ubaa-static-v2';
 const CACHE_NAMES = [SHELL_CACHE, STATIC_CACHE];
 const APP_SHELL_ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './styles.css',
+    './favicon.ico',
+    './favicon-32.png',
+    './favicon-16.png',
     './apple-touch-icon.png',
     './pwa-icon-192.png',
     './pwa-icon-512.png'
@@ -109,6 +112,7 @@ function shouldCacheStaticAsset(pathname) {
         pathname.endsWith('.css') ||
         pathname.endsWith('.wasm') ||
         pathname.endsWith('.png') ||
+        pathname.endsWith('.ico') ||
         pathname.endsWith('.svg') ||
         pathname.endsWith('.json') ||
         pathname.endsWith('.map');
