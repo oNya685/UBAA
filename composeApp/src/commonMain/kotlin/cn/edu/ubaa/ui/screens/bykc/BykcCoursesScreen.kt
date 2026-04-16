@@ -15,8 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Tune
@@ -68,9 +68,10 @@ fun BykcCoursesScreen(
           value = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         }
       }
-  val filterOptions = remember(courses, filters.campuses) {
-    buildBykcCourseFilterOptions(courses, selectedCampuses = filters.campuses)
-  }
+  val filterOptions =
+      remember(courses, filters.campuses) {
+        buildBykcCourseFilterOptions(courses, selectedCampuses = filters.campuses)
+      }
   val hasCustomSelections = remember(filters) { filters.hasCustomSelections(defaultFilters) }
   val activeFilterLabels = remember(filters) { filters.activeLabels(defaultFilters) }
   val visibleCourses = remember(courses, filters) { filterBykcCourses(courses, filters) }
@@ -198,7 +199,9 @@ private fun BykcCourseFiltersBar(
     onOpenFilters: () -> Unit,
     onClearFilters: () -> Unit,
 ) {
-  BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+  BoxWithConstraints(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+  ) {
     val isCompact = maxWidth < 560.dp
     val verticalPadding = if (isCompact) 12.dp else 16.dp
     val titleText =
@@ -220,7 +223,9 @@ private fun BykcCourseFiltersBar(
         tonalElevation = if (isCompact) 2.dp else 3.dp,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-      Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = verticalPadding)) {
+      Column(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = verticalPadding)
+      ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

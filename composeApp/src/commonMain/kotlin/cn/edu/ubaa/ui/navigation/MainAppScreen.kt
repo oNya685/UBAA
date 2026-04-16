@@ -595,7 +595,9 @@ fun MainAppScreen(
                   },
                   onFiltersChange = ::updateBykcCourseFilters,
                   onRefresh = {
-                    bykcViewModel.loadCourses(includeExpired = bykcCourseFilters.requiresAllCourses())
+                    bykcViewModel.loadCourses(
+                        includeExpired = bykcCourseFilters.requiresAllCourses()
+                    )
                   },
                   onLoadMore = {
                     bykcViewModel.loadMoreCourses(

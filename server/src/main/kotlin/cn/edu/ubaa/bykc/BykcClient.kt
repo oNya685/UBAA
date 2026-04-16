@@ -413,12 +413,11 @@ open class BykcClient(private val username: String) {
   }
 
   companion object {
-    private val parsedLogJson =
-        Json {
-          ignoreUnknownKeys = true
-          encodeDefaults = true
-          explicitNulls = true
-        }
+    private val parsedLogJson = Json {
+      ignoreUnknownKeys = true
+      encodeDefaults = true
+      explicitNulls = true
+    }
   }
 }
 

@@ -16,7 +16,9 @@ private val bykcStatusOrder =
     )
 
 private val bykcCategoryOrder =
-    BykcCourseSubCategory.entries.filter { it != BykcCourseSubCategory.UNKNOWN }.map { it.displayName }
+    BykcCourseSubCategory.entries
+        .filter { it != BykcCourseSubCategory.UNKNOWN }
+        .map { it.displayName }
 
 data class BykcCourseFilters(
     val statuses: Set<BykcCourseStatus> = emptySet(),
@@ -68,7 +70,10 @@ fun buildBykcCourseFilterOptions(
   )
 }
 
-fun filterBykcCourses(courses: List<BykcCourseDto>, filters: BykcCourseFilters): List<BykcCourseDto> {
+fun filterBykcCourses(
+    courses: List<BykcCourseDto>,
+    filters: BykcCourseFilters,
+): List<BykcCourseDto> {
   return courses.filter { it.matches(filters) }
 }
 
@@ -118,7 +123,8 @@ fun StoredBykcCourseFilters.toBykcCourseFilters(): BykcCourseFilters =
 private fun BykcCourseDto.matches(filters: BykcCourseFilters): Boolean {
   if (filters.statuses.isNotEmpty() && filters.statuses.none { matchesStatus(it) }) return false
   if (filters.categories.isNotEmpty() && filterCategoryLabel() !in filters.categories) return false
-  if (filters.campuses.isNotEmpty() && audienceCampuses.none { it in filters.campuses }) return false
+  if (filters.campuses.isNotEmpty() && audienceCampuses.none { it in filters.campuses })
+      return false
   return true
 }
 
@@ -135,12 +141,13 @@ private fun BykcCourseDto.filterCategoryLabel(): String? {
 
 private fun BykcCourseDto.isDisplayedAsFull(): Boolean {
   val currentCount = courseCurrentCount
-  val isEnrollmentFull = currentCount != null && courseMaxCount > 0 && currentCount >= courseMaxCount
-  return status == BykcCourseStatus.FULL || (status == BykcCourseStatus.AVAILABLE && isEnrollmentFull)
+  val isEnrollmentFull =
+      currentCount != null && courseMaxCount > 0 && currentCount >= courseMaxCount
+  return status == BykcCourseStatus.FULL ||
+      (status == BykcCourseStatus.AVAILABLE && isEnrollmentFull)
 }
 
-private fun <T> Set<T>.toggle(value: T): Set<T> =
-    if (value in this) this - value else this + value
+private fun <T> Set<T>.toggle(value: T): Set<T> = if (value in this) this - value else this + value
 
 private fun parseStoredBykcCourseStatus(name: String): BykcCourseStatus? =
     BykcCourseStatus.entries.firstOrNull { it.name == name }

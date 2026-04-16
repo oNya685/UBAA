@@ -52,7 +52,8 @@ fun isBykcCourseFull(
     courseMaxCount: Int,
     status: BykcCourseStatus?,
 ): Boolean {
-  val fullByCount = courseCurrentCount != null && courseMaxCount > 0 && courseCurrentCount >= courseMaxCount
+  val fullByCount =
+      courseCurrentCount != null && courseMaxCount > 0 && courseCurrentCount >= courseMaxCount
   return fullByCount || status == BykcCourseStatus.FULL
 }
 
@@ -140,14 +141,13 @@ private fun isBykcCheckinStateBlockingAttendanceActions(checkin: Int?): Boolean 
 private fun currentBykcLocalDateTime(): LocalDateTime =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-private fun formatBykcDate(dateTime: LocalDateTime): String =
-    buildString {
-      append(dateTime.year)
-      append('-')
-      append((dateTime.month.ordinal + 1).toString().padStart(2, '0'))
-      append('-')
-      append(dateTime.day.toString().padStart(2, '0'))
-    }
+private fun formatBykcDate(dateTime: LocalDateTime): String = buildString {
+  append(dateTime.year)
+  append('-')
+  append((dateTime.month.ordinal + 1).toString().padStart(2, '0'))
+  append('-')
+  append(dateTime.day.toString().padStart(2, '0'))
+}
 
 private fun formatBykcTime(dateTime: LocalDateTime): String =
     "${dateTime.hour.toString().padStart(2, '0')}:${dateTime.minute.toString().padStart(2, '0')}"

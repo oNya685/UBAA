@@ -205,34 +205,42 @@ fun BykcCourseDetailScreen(
             ) {
               item {
                 DetailCard(title = "适用范围") {
-                  course.audienceCampuses.takeIf { it.isNotEmpty() }?.let { campuses ->
-                    DetailItem(
-                        label = "校区",
-                        value = campuses.joinToString(" / "),
-                        icon = Icons.Default.Map,
-                    )
-                  }
-                  course.audienceColleges.takeIf { it.isNotEmpty() }?.let { colleges ->
-                    DetailItem(
-                        label = "学院",
-                        value = colleges.joinToString(" / "),
-                        icon = Icons.Default.AccountBalance,
-                    )
-                  }
-                  course.audienceTerms.takeIf { it.isNotEmpty() }?.let { terms ->
-                    DetailItem(
-                        label = "年级",
-                        value = terms.joinToString(" / "),
-                        icon = Icons.Default.School,
-                    )
-                  }
-                  course.audienceGroups.takeIf { it.isNotEmpty() }?.let { groups ->
-                    DetailItem(
-                        label = "人群",
-                        value = groups.joinToString(" / "),
-                        icon = Icons.Default.Groups,
-                    )
-                  }
+                  course.audienceCampuses
+                      .takeIf { it.isNotEmpty() }
+                      ?.let { campuses ->
+                        DetailItem(
+                            label = "校区",
+                            value = campuses.joinToString(" / "),
+                            icon = Icons.Default.Map,
+                        )
+                      }
+                  course.audienceColleges
+                      .takeIf { it.isNotEmpty() }
+                      ?.let { colleges ->
+                        DetailItem(
+                            label = "学院",
+                            value = colleges.joinToString(" / "),
+                            icon = Icons.Default.AccountBalance,
+                        )
+                      }
+                  course.audienceTerms
+                      .takeIf { it.isNotEmpty() }
+                      ?.let { terms ->
+                        DetailItem(
+                            label = "年级",
+                            value = terms.joinToString(" / "),
+                            icon = Icons.Default.School,
+                        )
+                      }
+                  course.audienceGroups
+                      .takeIf { it.isNotEmpty() }
+                      ?.let { groups ->
+                        DetailItem(
+                            label = "人群",
+                            value = groups.joinToString(" / "),
+                            icon = Icons.Default.Groups,
+                        )
+                      }
                 }
               }
             }

@@ -93,8 +93,7 @@ data class BykcCourseDto(
 /**
  * 博雅课程详情 DTO。
  *
- * 字段设计上保持为 [BykcCourseDto] 的超集：列表页已有的展示字段在详情页仍然可用，
- * 仅额外补充正文、联系方式、受众范围、签到信息等详情专属数据。
+ * 字段设计上保持为 [BykcCourseDto] 的超集：列表页已有的展示字段在详情页仍然可用， 仅额外补充正文、联系方式、受众范围、签到信息等详情专属数据。
  */
 @Serializable
 data class BykcCourseDetailDto(

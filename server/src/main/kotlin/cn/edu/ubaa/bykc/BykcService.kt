@@ -437,8 +437,7 @@ class BykcService(
       this.orEmpty().mapNotNull { it.normalizedOrNull() }
 
   private fun List<String>?.toAudienceCampusLabels(rawCampus: String?): List<String> {
-    val normalizedLabels =
-        normalizedTextList().map { if (it == "全部校区") "未指定校区" else it }.distinct()
+    val normalizedLabels = normalizedTextList().map { if (it == "全部校区") "未指定校区" else it }.distinct()
     if (normalizedLabels.isNotEmpty()) return normalizedLabels
     return when (rawCampus.normalizedOrNull()) {
       "ALL" -> listOf("未指定校区")

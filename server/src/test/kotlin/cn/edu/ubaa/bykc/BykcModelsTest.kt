@@ -1,8 +1,8 @@
 package cn.edu.ubaa.bykc
 
 import cn.edu.ubaa.model.dto.BykcCourseCategory
-import cn.edu.ubaa.model.dto.BykcCourseDto
 import cn.edu.ubaa.model.dto.BykcCourseDetailDto
+import cn.edu.ubaa.model.dto.BykcCourseDto
 import cn.edu.ubaa.model.dto.BykcCourseStatus
 import cn.edu.ubaa.model.dto.BykcCourseSubCategory
 import kotlin.test.*

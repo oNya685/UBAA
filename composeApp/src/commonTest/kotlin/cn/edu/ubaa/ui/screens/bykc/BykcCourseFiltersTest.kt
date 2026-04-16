@@ -103,7 +103,9 @@ class BykcCourseFiltersTest {
   @Test
   fun `requiresAllCourses only turns on for ended or expired filters`() {
     assertTrue(BykcCourseFilters().requiresAllCourses())
-    assertFalse(BykcCourseFilters(statuses = setOf(BykcCourseStatus.AVAILABLE)).requiresAllCourses())
+    assertFalse(
+        BykcCourseFilters(statuses = setOf(BykcCourseStatus.AVAILABLE)).requiresAllCourses()
+    )
     assertTrue(BykcCourseFilters(statuses = setOf(BykcCourseStatus.ENDED)).requiresAllCourses())
     assertTrue(BykcCourseFilters(statuses = setOf(BykcCourseStatus.EXPIRED)).requiresAllCourses())
   }
@@ -113,9 +115,8 @@ class BykcCourseFiltersTest {
     assertTrue(defaultBykcCourseFilters().activeLabels(defaultBykcCourseFilters()).isEmpty())
     assertEquals(
         listOf("状态: 选课结束"),
-        BykcCourseFilters(statuses = setOf(BykcCourseStatus.ENDED)).activeLabels(
-            defaultBykcCourseFilters()
-        ),
+        BykcCourseFilters(statuses = setOf(BykcCourseStatus.ENDED))
+            .activeLabels(defaultBykcCourseFilters()),
     )
     assertEquals(
         listOf("状态: 不限"),

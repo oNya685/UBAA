@@ -141,7 +141,10 @@ class BykcServiceDetailTest {
     val chosenCourses = service.getChosenCourses("test-user")
 
     assertEquals(1, chosenCourses.size)
-    assertEquals(LocalDateTime.parse("2025-11-26T18:00:00"), chosenCourses.first().courseCancelEndDate)
+    assertEquals(
+        LocalDateTime.parse("2025-11-26T18:00:00"),
+        chosenCourses.first().courseCancelEndDate,
+    )
   }
 
   @Test
