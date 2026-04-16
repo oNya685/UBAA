@@ -131,6 +131,7 @@ private fun BykcCourseDto.matches(filters: BykcCourseFilters): Boolean {
 private fun BykcCourseDto.matchesStatus(status: BykcCourseStatus): Boolean {
   return when (status) {
     BykcCourseStatus.FULL -> !selected && isDisplayedAsFull()
+    BykcCourseStatus.AVAILABLE -> this.status == BykcCourseStatus.AVAILABLE && !isDisplayedAsFull()
     else -> this.status == status
   }
 }

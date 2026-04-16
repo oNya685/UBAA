@@ -205,6 +205,30 @@ class BykcCourseFiltersTest {
     assertEquals(listOf(1L), filtered.map { it.id })
   }
 
+  @Test
+  fun `available status filter excludes effectively full courses`() {
+    val courses =
+        listOf(
+            course(
+                id = 1,
+                status = BykcCourseStatus.AVAILABLE,
+                currentCount = 39,
+                maxCount = 40,
+            ),
+            course(
+                id = 2,
+                status = BykcCourseStatus.AVAILABLE,
+                currentCount = 40,
+                maxCount = 40,
+            ),
+        )
+
+    val filtered =
+        filterBykcCourses(courses, BykcCourseFilters(statuses = setOf(BykcCourseStatus.AVAILABLE)))
+
+    assertEquals(listOf(1L), filtered.map { it.id })
+  }
+
   private fun course(
       id: Long,
       status: BykcCourseStatus = BykcCourseStatus.AVAILABLE,
