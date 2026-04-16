@@ -150,10 +150,11 @@ fun BykcCourseDetailScreen(
                   )
                 }
                 course.category?.let { category ->
+                  val subCategory = course.subCategory
                   val categoryText =
-                      if (course.subCategory != null) {
-                        "$category / ${course.subCategory}"
-                      } else category
+                      if (subCategory != null) {
+                        "${category.displayName} / ${subCategory.displayName}"
+                      } else category.displayName
                   DetailItem(
                       label = "课程分类",
                       value = categoryText,

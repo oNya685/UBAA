@@ -287,13 +287,3 @@ data class BykcStatisticsData(
 /** 分类修读明细。 */
 @Serializable
 data class BykcSubCategoryStats(val assessmentCount: Int, val completeAssessmentCount: Int)
-
-/** 课程状态枚举。 */
-enum class BykcCourseStatusEnum(val displayName: String) {
-  EXPIRED("已过期"),
-  SELECTED("已选"),
-  PREVIEW("预告"),
-  ENDED("已结束"),
-  FULL("人数已满"),
-  AVAILABLE("可选"),
-}

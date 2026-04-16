@@ -1,12 +1,12 @@
 package cn.edu.ubaa.bykc
 
-import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDateTime
 
 class BykcServiceDetailTest {
 
@@ -41,9 +41,9 @@ class BykcServiceDetailTest {
 
     val detail = service.getCourseDetail(username = "test-user", courseId = course.id)
 
-    assertEquals(course.courseSelectStartDate, detail.courseSelectStartDate)
-    assertEquals(course.courseSelectEndDate, detail.courseSelectEndDate)
-    assertEquals(course.courseCancelEndDate, detail.courseCancelEndDate)
+    assertEquals(LocalDateTime.parse("2025-11-25T19:00:00"), detail.courseSelectStartDate)
+    assertEquals(LocalDateTime.parse("2025-11-26T18:00:00"), detail.courseSelectEndDate)
+    assertEquals(LocalDateTime.parse("2025-11-26T18:00:00"), detail.courseCancelEndDate)
     assertEquals(course.coursePosition, detail.coursePosition)
     assertEquals(course.courseTeacher, detail.courseTeacher)
   }
@@ -141,7 +141,7 @@ class BykcServiceDetailTest {
     val chosenCourses = service.getChosenCourses("test-user")
 
     assertEquals(1, chosenCourses.size)
-    assertEquals("2025-11-26 18:00:00", chosenCourses.first().courseCancelEndDate)
+    assertEquals(LocalDateTime.parse("2025-11-26T18:00:00"), chosenCourses.first().courseCancelEndDate)
   }
 
   @Test

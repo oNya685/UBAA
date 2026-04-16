@@ -4,15 +4,16 @@ import cn.edu.ubaa.auth.GlobalSessionManager
 import cn.edu.ubaa.auth.SessionManager
 import cn.edu.ubaa.model.dto.BykcCategoryStatisticsDto
 import cn.edu.ubaa.model.dto.BykcChosenCourseDto
+import cn.edu.ubaa.model.dto.BykcCourseCategory
 import cn.edu.ubaa.model.dto.BykcCourseDetailDto
 import cn.edu.ubaa.model.dto.BykcCourseDto
 import cn.edu.ubaa.model.dto.BykcCoursePage
+import cn.edu.ubaa.model.dto.BykcCourseStatus
+import cn.edu.ubaa.model.dto.BykcCourseSubCategory
 import cn.edu.ubaa.model.dto.BykcSignConfigDto
 import cn.edu.ubaa.model.dto.BykcSignPointDto
 import cn.edu.ubaa.model.dto.BykcStatisticsDto
 import cn.edu.ubaa.utils.withUpstreamDeadline
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -20,7 +21,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
@@ -35,11 +40,12 @@ import org.slf4j.LoggerFactory
 class BykcService(
     private val sessionManager: SessionManager = GlobalSessionManager.instance,
     private val clientProvider: (String) -> BykcClient = ::BykcClient,
-    private val nowProvider: () -> LocalDateTime = { LocalDateTime.now() },
+    private val nowProvider: () -> LocalDateTime = {
+      Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    },
 ) {
   private val log = LoggerFactory.getLogger(BykcService::class.java)
   private val json = Json { ignoreUnknownKeys = true }
-  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
   private data class CachedClient(
       val client: BykcClient,
@@ -104,7 +110,7 @@ class BykcService(
           result.content.mapNotNull { course ->
             try {
               val status = calculateCourseStatus(course)
-              if (status == BykcCourseStatusEnum.EXPIRED || status == BykcCourseStatusEnum.ENDED)
+              if (status == BykcCourseStatus.EXPIRED || status == BykcCourseStatus.ENDED)
                   return@mapNotNull null
 
               course.toCourseDto(status)
@@ -178,12 +184,12 @@ class BykcService(
             courseName = course?.courseName ?: "未知课程",
             coursePosition = course?.coursePosition,
             courseTeacher = course?.courseTeacher,
-            courseStartDate = course?.courseStartDate,
-            courseEndDate = course?.courseEndDate,
-            selectDate = chosen.selectDate,
-            courseCancelEndDate = course?.courseCancelEndDate,
-            category = course?.courseNewKind1?.kindName,
-            subCategory = course?.courseNewKind2?.kindName,
+            courseStartDate = course?.courseStartDate.toDtoLocalDateTime(),
+            courseEndDate = course?.courseEndDate.toDtoLocalDateTime(),
+            selectDate = chosen.selectDate.toDtoLocalDateTime(),
+            courseCancelEndDate = course?.courseCancelEndDate.toDtoLocalDateTime(),
+            category = BykcCourseCategory.fromDisplayName(course?.courseNewKind1?.kindName),
+            subCategory = BykcCourseSubCategory.fromDisplayName(course?.courseNewKind2?.kindName),
             checkin = chosen.checkin ?: 0,
             score = chosen.score,
             pass = chosen.pass,
@@ -346,10 +352,10 @@ class BykcService(
     return try {
       val config = json.decodeFromString<BykcSignConfig>(configJson)
       BykcSignConfigDto(
-          signStartDate = config.signStartDate,
-          signEndDate = config.signEndDate,
-          signOutStartDate = config.signOutStartDate,
-          signOutEndDate = config.signOutEndDate,
+          signStartDate = config.signStartDate.toDtoLocalDateTime(),
+          signEndDate = config.signEndDate.toDtoLocalDateTime(),
+          signOutStartDate = config.signOutStartDate.toDtoLocalDateTime(),
+          signOutEndDate = config.signOutEndDate.toDtoLocalDateTime(),
           signPoints = config.signPointList.map { BykcSignPointDto(it.lat, it.lng, it.radius) },
       )
     } catch (_: Exception) {
@@ -357,29 +363,30 @@ class BykcService(
     }
   }
 
-  private fun BykcRawCourse.toCourseDto(status: BykcCourseStatusEnum): BykcCourseDto {
+  private fun BykcRawCourse.toCourseDto(status: BykcCourseStatus): BykcCourseDto {
     return BykcCourseDto(
         id = id,
         courseName = courseName.trim(),
         coursePosition = coursePosition.normalizedOrNull(),
         courseTeacher = courseTeacher.normalizedOrNull(),
-        courseStartDate = courseStartDate.normalizedOrNull(),
-        courseEndDate = courseEndDate.normalizedOrNull(),
-        courseSelectStartDate = courseSelectStartDate.normalizedOrNull(),
-        courseSelectEndDate = courseSelectEndDate.normalizedOrNull(),
-        courseCancelEndDate = courseCancelEndDate.normalizedOrNull(),
+        courseStartDate = courseStartDate.toDtoLocalDateTime(),
+        courseEndDate = courseEndDate.toDtoLocalDateTime(),
+        courseSelectStartDate = courseSelectStartDate.toDtoLocalDateTime(),
+        courseSelectEndDate = courseSelectEndDate.toDtoLocalDateTime(),
+        courseCancelEndDate = courseCancelEndDate.toDtoLocalDateTime(),
         courseMaxCount = courseMaxCount,
         courseCurrentCount = courseCurrentCount,
-        category = courseNewKind1?.kindName.normalizedOrNull(),
-        subCategory = courseNewKind2?.kindName.normalizedOrNull(),
+        category = BykcCourseCategory.fromDisplayName(courseNewKind1?.kindName.normalizedOrNull()),
+        subCategory =
+            BykcCourseSubCategory.fromDisplayName(courseNewKind2?.kindName.normalizedOrNull()),
         hasSignPoints = parseSignConfig(courseSignConfig)?.signPoints?.isNotEmpty() == true,
-        status = status.displayName,
+        status = status,
         selected = selected == true,
     )
   }
 
   private fun BykcRawCourse.toCourseDetailDto(
-      status: BykcCourseStatusEnum,
+      status: BykcCourseStatus,
       signConfig: BykcSignConfigDto?,
       checkin: Int?,
       pass: Int?,
@@ -390,17 +397,18 @@ class BykcService(
         courseName = courseName.trim(),
         coursePosition = coursePosition.normalizedOrNull(),
         courseTeacher = courseTeacher.normalizedOrNull(),
-        courseStartDate = courseStartDate.normalizedOrNull(),
-        courseEndDate = courseEndDate.normalizedOrNull(),
-        courseSelectStartDate = courseSelectStartDate.normalizedOrNull(),
-        courseSelectEndDate = courseSelectEndDate.normalizedOrNull(),
-        courseCancelEndDate = courseCancelEndDate.normalizedOrNull(),
+        courseStartDate = courseStartDate.toDtoLocalDateTime(),
+        courseEndDate = courseEndDate.toDtoLocalDateTime(),
+        courseSelectStartDate = courseSelectStartDate.toDtoLocalDateTime(),
+        courseSelectEndDate = courseSelectEndDate.toDtoLocalDateTime(),
+        courseCancelEndDate = courseCancelEndDate.toDtoLocalDateTime(),
         courseMaxCount = courseMaxCount,
         courseCurrentCount = courseCurrentCount,
-        category = courseNewKind1?.kindName.normalizedOrNull(),
-        subCategory = courseNewKind2?.kindName.normalizedOrNull(),
+        category = BykcCourseCategory.fromDisplayName(courseNewKind1?.kindName.normalizedOrNull()),
+        subCategory =
+            BykcCourseSubCategory.fromDisplayName(courseNewKind2?.kindName.normalizedOrNull()),
         hasSignPoints = signConfig?.signPoints?.isNotEmpty() == true,
-        status = status.displayName,
+        status = status,
         selected = selected == true,
         courseContact = courseContact.normalizedOrNull(),
         courseContactMobile = courseContactMobile.normalizedOrNull(),
@@ -422,6 +430,11 @@ class BykcService(
 
   private fun List<String>?.normalizedTextList(): List<String> =
       this.orEmpty().mapNotNull { it.normalizedOrNull() }
+
+  private fun String?.toDtoLocalDateTime(): LocalDateTime? {
+    val normalized = normalizedOrNull() ?: return null
+    return runCatching { LocalDateTime.parse(normalized.replace(" ", "T")) }.getOrNull()
+  }
 
   private fun canSign(signConfig: BykcSignConfigDto?, now: LocalDateTime): Boolean {
     return isWithinWindow(signConfig?.signStartDate, signConfig?.signEndDate, now)
@@ -462,23 +475,23 @@ class BykcService(
   }
 
   /** 根据课程时间配置计算课程状态。 */
-  private fun calculateCourseStatus(course: BykcRawCourse): BykcCourseStatusEnum {
+  private fun calculateCourseStatus(course: BykcRawCourse): BykcCourseStatus {
     val now = nowProvider()
     return try {
       val cs = parseDateTime(course.courseStartDate)
       val ss = parseDateTime(course.courseSelectStartDate)
       val se = parseDateTime(course.courseSelectEndDate)
       when {
-        cs != null && now.isAfter(cs) -> BykcCourseStatusEnum.EXPIRED
-        course.selected == true -> BykcCourseStatusEnum.SELECTED
-        se != null && now.isAfter(se) -> BykcCourseStatusEnum.ENDED
+        cs != null && now > cs -> BykcCourseStatus.EXPIRED
+        course.selected == true -> BykcCourseStatus.SELECTED
+        se != null && now > se -> BykcCourseStatus.ENDED
         course.courseCurrentCount != null && course.courseCurrentCount >= course.courseMaxCount ->
-            BykcCourseStatusEnum.FULL
-        ss != null && now.isBefore(ss) -> BykcCourseStatusEnum.PREVIEW
-        else -> BykcCourseStatusEnum.AVAILABLE
+            BykcCourseStatus.FULL
+        ss != null && now < ss -> BykcCourseStatus.PREVIEW
+        else -> BykcCourseStatus.AVAILABLE
       }
     } catch (_: Exception) {
-      BykcCourseStatusEnum.AVAILABLE
+      BykcCourseStatus.AVAILABLE
     }
   }
 
@@ -512,22 +525,17 @@ class BykcService(
   private fun isSignedAwaitingSignOut(checkin: Int?): Boolean = checkin == 5 || checkin == 6
 
   private fun isWithinWindow(
-      startDate: String?,
-      endDate: String?,
+      startDate: LocalDateTime?,
+      endDate: LocalDateTime?,
       now: LocalDateTime,
   ): Boolean {
-    val start = parseDateTime(startDate) ?: return false
-    val end = parseDateTime(endDate) ?: return false
-    return !now.isBefore(start) && !now.isAfter(end)
+    val start = startDate ?: return false
+    val end = endDate ?: return false
+    return now >= start && now <= end
   }
 
   private fun parseDateTime(dateTime: String?): LocalDateTime? {
-    if (dateTime.isNullOrBlank()) return null
-    return try {
-      LocalDateTime.parse(dateTime, dateTimeFormatter)
-    } catch (_: Exception) {
-      null
-    }
+    return dateTime.toDtoLocalDateTime()
   }
 
   /** 汇总修读统计。 */

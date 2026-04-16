@@ -1,15 +1,56 @@
+@file:UseSerializers(cn.edu.ubaa.model.dto.BykcLocalDateTimeSerializer::class)
+
 package cn.edu.ubaa.model.dto
 
+import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 
-/** 博雅课程状态常量定义。 */
-object BykcCourseStatus {
-  const val EXPIRED = "已过期"
-  const val SELECTED = "已选"
-  const val PREVIEW = "预告"
-  const val ENDED = "已结束"
-  const val FULL = "人数已满"
-  const val AVAILABLE = "可选"
+/** 博雅课程一级分类。 */
+@Serializable
+enum class BykcCourseCategory(val displayName: String) {
+  @SerialName("博雅课程") BOYA("博雅课程"),
+  @SerialName("未知分类") UNKNOWN("未知分类");
+
+  companion object {
+    fun fromDisplayName(value: String?): BykcCourseCategory? {
+      val normalized = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+      return entries.firstOrNull { it.displayName == normalized } ?: UNKNOWN
+    }
+  }
+}
+
+/** 博雅课程二级分类。 */
+@Serializable
+enum class BykcCourseSubCategory(val displayName: String) {
+  @SerialName("德育") MORAL("德育"),
+  @SerialName("美育") AESTHETIC("美育"),
+  @SerialName("劳动教育") LABOR("劳动教育"),
+  @SerialName("安全健康") SAFETY_HEALTH("安全健康"),
+  @SerialName("其他方面") OTHER("其他方面"),
+  @SerialName("未知类型") UNKNOWN("未知类型");
+
+  companion object {
+    fun fromDisplayName(value: String?): BykcCourseSubCategory? {
+      val normalized = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+      return entries.firstOrNull { it.displayName == normalized } ?: UNKNOWN
+    }
+  }
+}
+
+/** 博雅课程状态。 */
+@Serializable
+enum class BykcCourseStatus(val displayName: String) {
+  @SerialName("已过期") EXPIRED("已过期"),
+  @SerialName("已选") SELECTED("已选"),
+  @SerialName("预告") PREVIEW("预告"),
+  @SerialName("已结束") ENDED("已结束"),
+  @SerialName("人数已满") FULL("人数已满"),
+  @SerialName("可选") AVAILABLE("可选"),
+  ;
+
+  override fun toString(): String = displayName
 }
 
 /**
@@ -23,11 +64,11 @@ data class BykcCourseDto(
     val courseName: String,
     val coursePosition: String? = null,
     val courseTeacher: String? = null,
-    val courseStartDate: String? = null,
-    val courseEndDate: String? = null,
-    val courseSelectStartDate: String? = null,
-    val courseSelectEndDate: String? = null,
-    val courseCancelEndDate: String? = null,
+    val courseStartDate: LocalDateTime? = null,
+    val courseEndDate: LocalDateTime? = null,
+    val courseSelectStartDate: LocalDateTime? = null,
+    val courseSelectEndDate: LocalDateTime? = null,
+    val courseCancelEndDate: LocalDateTime? = null,
     val courseMaxCount: Int = 0,
     /**
      * 当前报名人数。
@@ -36,13 +77,13 @@ data class BykcCourseDto(
      */
     val courseCurrentCount: Int? = null,
     /** BYKC 新版一级分类，如“博雅课程”。 */
-    val category: String? = null,
-    /** BYKC 新版二级分类，如“德育/美育/劳动教育/安全健康”。 */
-    val subCategory: String? = null,
+    val category: BykcCourseCategory? = null,
+    /** BYKC 新版二级分类，如“德育/美育/劳动教育/安全健康/其他方面”。 */
+    val subCategory: BykcCourseSubCategory? = null,
     /** 是否存在基于地点的签到点配置。 */
     val hasSignPoints: Boolean = false,
     /** 服务端统一计算后的课程状态。 */
-    val status: String,
+    val status: BykcCourseStatus,
     /** 当前用户是否已选择该课程。 */
     val selected: Boolean = false,
 )
@@ -59,17 +100,17 @@ data class BykcCourseDetailDto(
     val courseName: String,
     val coursePosition: String? = null,
     val courseTeacher: String? = null,
-    val courseStartDate: String? = null,
-    val courseEndDate: String? = null,
-    val courseSelectStartDate: String? = null,
-    val courseSelectEndDate: String? = null,
-    val courseCancelEndDate: String? = null,
+    val courseStartDate: LocalDateTime? = null,
+    val courseEndDate: LocalDateTime? = null,
+    val courseSelectStartDate: LocalDateTime? = null,
+    val courseSelectEndDate: LocalDateTime? = null,
+    val courseCancelEndDate: LocalDateTime? = null,
     val courseMaxCount: Int = 0,
     val courseCurrentCount: Int? = null,
-    val category: String? = null,
-    val subCategory: String? = null,
+    val category: BykcCourseCategory? = null,
+    val subCategory: BykcCourseSubCategory? = null,
     val hasSignPoints: Boolean = false,
-    val status: String,
+    val status: BykcCourseStatus,
     val selected: Boolean = false,
     /** 课程联系人。 */
     val courseContact: String? = null,
@@ -132,12 +173,12 @@ data class BykcChosenCourseDto(
     val courseName: String,
     val coursePosition: String? = null,
     val courseTeacher: String? = null,
-    val courseStartDate: String? = null,
-    val courseEndDate: String? = null,
-    val selectDate: String? = null,
-    val courseCancelEndDate: String? = null,
-    val category: String? = null,
-    val subCategory: String? = null,
+    val courseStartDate: LocalDateTime? = null,
+    val courseEndDate: LocalDateTime? = null,
+    val selectDate: LocalDateTime? = null,
+    val courseCancelEndDate: LocalDateTime? = null,
+    val category: BykcCourseCategory? = null,
+    val subCategory: BykcCourseSubCategory? = null,
     val checkin: Int = 0,
     val score: Int? = null,
     val pass: Int? = null,
@@ -162,10 +203,10 @@ data class BykcChosenCourseDto(
  */
 @Serializable
 data class BykcSignConfigDto(
-    val signStartDate: String? = null,
-    val signEndDate: String? = null,
-    val signOutStartDate: String? = null,
-    val signOutEndDate: String? = null,
+    val signStartDate: LocalDateTime? = null,
+    val signEndDate: LocalDateTime? = null,
+    val signOutStartDate: LocalDateTime? = null,
+    val signOutEndDate: LocalDateTime? = null,
     val signPoints: List<BykcSignPointDto> = emptyList(),
 )
 

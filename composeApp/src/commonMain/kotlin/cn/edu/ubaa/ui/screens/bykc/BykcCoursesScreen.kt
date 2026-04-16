@@ -213,8 +213,7 @@ fun BykcCourseCard(
       course.coursePosition?.let { position -> InfoRow(label = "地点", value = position) }
 
       course.courseStartDate?.let { startDate ->
-        val endDate = course.courseEndDate ?: ""
-        InfoRow(label = "时间", value = formatDateRange(startDate, endDate))
+        InfoRow(label = "时间", value = formatDateRangeOrStart(startDate, course.courseEndDate))
       }
       val selectTimeDisplay =
           resolveSelectTimeDisplay(
@@ -236,7 +235,9 @@ fun BykcCourseCard(
           course.subCategory?.let { subCategory ->
             SuggestionChip(
                 onClick = {},
-                label = { Text(subCategory, style = MaterialTheme.typography.labelSmall) },
+                label = {
+                  Text(subCategory.displayName, style = MaterialTheme.typography.labelSmall)
+                },
             )
           }
           if (course.hasSignPoints) {
@@ -277,7 +278,7 @@ fun BykcCourseCard(
 }
 
 @Composable
-fun CourseStatusChip(status: String, selected: Boolean) {
+fun CourseStatusChip(status: BykcCourseStatus, selected: Boolean) {
   val (containerColor, labelColor) =
       when {
         selected ->
@@ -308,7 +309,7 @@ fun CourseStatusChip(status: String, selected: Boolean) {
       onClick = {},
       label = {
         Text(
-            text = if (selected) "已选" else status,
+            text = if (selected) BykcCourseStatus.SELECTED.displayName else status.displayName,
             style = MaterialTheme.typography.labelMedium,
             color = labelColor,
         )
