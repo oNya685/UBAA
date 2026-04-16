@@ -88,7 +88,7 @@ class BykcServiceDetailTest {
     val detail = service.getCourseDetail(username = "test-user", courseId = course.id)
 
     assertEquals("学生中心", detail.organizerCollegeName)
-    assertEquals(listOf("全部校区"), detail.audienceCampuses)
+    assertEquals(listOf("未指定校区"), detail.audienceCampuses)
     assertEquals(listOf("全部学院"), detail.audienceColleges)
     assertEquals(listOf("全部年级"), detail.audienceTerms)
     assertEquals(listOf("全部人群"), detail.audienceGroups)

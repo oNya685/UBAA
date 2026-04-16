@@ -45,7 +45,7 @@ enum class BykcCourseStatus(val displayName: String) {
   @SerialName("已过期") EXPIRED("已过期"),
   @SerialName("已选") SELECTED("已选"),
   @SerialName("预告") PREVIEW("预告"),
-  @SerialName("已结束") ENDED("已结束"),
+  @SerialName("选课结束") ENDED("选课结束"),
   @SerialName("人数已满") FULL("人数已满"),
   @SerialName("可选") AVAILABLE("可选"),
   ;
@@ -80,6 +80,8 @@ data class BykcCourseDto(
     val category: BykcCourseCategory? = null,
     /** BYKC 新版二级分类，如“德育/美育/劳动教育/安全健康/其他方面”。 */
     val subCategory: BykcCourseSubCategory? = null,
+    /** 允许报名的校区范围文本。 */
+    val audienceCampuses: List<String> = emptyList(),
     /** 是否存在基于地点的签到点配置。 */
     val hasSignPoints: Boolean = false,
     /** 服务端统一计算后的课程状态。 */

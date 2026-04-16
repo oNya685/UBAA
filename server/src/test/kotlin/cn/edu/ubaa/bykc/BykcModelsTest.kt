@@ -215,6 +215,7 @@ class BykcModelsTest {
             courseCurrentCount = 50,
             category = BykcCourseCategory.BOYA,
             subCategory = BykcCourseSubCategory.MORAL,
+            audienceCampuses = listOf("学院路校区"),
             hasSignPoints = true,
             status = BykcCourseStatus.AVAILABLE,
             selected = false,
@@ -229,6 +230,7 @@ class BykcModelsTest {
     assertEquals(dto.courseName, deserialized.courseName)
     assertEquals(dto.status, deserialized.status)
     assertEquals(dto.category, deserialized.category)
+    assertEquals(dto.audienceCampuses, deserialized.audienceCampuses)
     assertEquals(dto.hasSignPoints, deserialized.hasSignPoints)
   }
 
@@ -278,7 +280,7 @@ class BykcModelsTest {
     assertEquals("已过期", BykcCourseStatus.EXPIRED.displayName)
     assertEquals("已选", BykcCourseStatus.SELECTED.displayName)
     assertEquals("预告", BykcCourseStatus.PREVIEW.displayName)
-    assertEquals("已结束", BykcCourseStatus.ENDED.displayName)
+    assertEquals("选课结束", BykcCourseStatus.ENDED.displayName)
     assertEquals("人数已满", BykcCourseStatus.FULL.displayName)
     assertEquals("可选", BykcCourseStatus.AVAILABLE.displayName)
   }

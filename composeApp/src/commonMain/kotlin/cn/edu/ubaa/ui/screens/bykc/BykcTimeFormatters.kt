@@ -85,7 +85,7 @@ fun resolveBykcSelectButtonState(
 
   return when (course.status) {
     BykcCourseStatus.AVAILABLE -> BykcSelectButtonState(true)
-    BykcCourseStatus.ENDED -> BykcSelectButtonState(false, "该课程已结束，当前不可选择。")
+    BykcCourseStatus.ENDED -> BykcSelectButtonState(false, "该课程选课已结束，当前不可选择。")
     BykcCourseStatus.EXPIRED -> BykcSelectButtonState(false, "该课程已过期，当前不可选择。")
     else -> BykcSelectButtonState(false, "该课程当前状态不可选择。")
   }

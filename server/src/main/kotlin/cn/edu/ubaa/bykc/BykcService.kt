@@ -123,7 +123,7 @@ class BykcService(
     }
   }
 
-  /** 获取所有博雅课程（包括已结束和过期的）。 */
+  /** 获取所有博雅课程（包括选课结束和已过期的）。 */
   suspend fun getAllCourses(username: String, pageNumber: Int, pageSize: Int): BykcCoursePage {
     return withBykcDeadline("博雅全部课程加载超时") {
       ensureBykcLogin(username)
@@ -364,6 +364,9 @@ class BykcService(
   }
 
   private fun BykcRawCourse.toCourseDto(status: BykcCourseStatus): BykcCourseDto {
+    // BYKC 的 `ALL` / `全部校区` 在课程列表里更接近“发布时未指定开课校区”，
+    // 这里统一折叠为“未指定校区”，避免前端把它误解成真实的跨校区开课标签。
+    val audienceCampuses = courseCampusList.toAudienceCampusLabels(courseCampus)
     return BykcCourseDto(
         id = id,
         courseName = courseName.trim(),
@@ -379,6 +382,7 @@ class BykcService(
         category = BykcCourseCategory.fromDisplayName(courseNewKind1?.kindName.normalizedOrNull()),
         subCategory =
             BykcCourseSubCategory.fromDisplayName(courseNewKind2?.kindName.normalizedOrNull()),
+        audienceCampuses = audienceCampuses,
         hasSignPoints = parseSignConfig(courseSignConfig)?.signPoints?.isNotEmpty() == true,
         status = status,
         selected = selected == true,
@@ -392,6 +396,7 @@ class BykcService(
       pass: Int?,
       availability: AttendanceAvailability,
   ): BykcCourseDetailDto {
+    val audienceCampuses = courseCampusList.toAudienceCampusLabels(courseCampus)
     return BykcCourseDetailDto(
         id = id,
         courseName = courseName.trim(),
@@ -414,7 +419,7 @@ class BykcService(
         courseContactMobile = courseContactMobile.normalizedOrNull(),
         organizerCollegeName = courseBelongCollege?.collegeName.normalizedOrNull(),
         courseDesc = courseDesc.normalizedOrNull(),
-        audienceCampuses = courseCampusList.normalizedTextList(),
+        audienceCampuses = audienceCampuses,
         audienceColleges = courseCollegeList.normalizedTextList(),
         audienceTerms = courseTermList.normalizedTextList(),
         audienceGroups = courseGroupList.normalizedTextList(),
@@ -430,6 +435,16 @@ class BykcService(
 
   private fun List<String>?.normalizedTextList(): List<String> =
       this.orEmpty().mapNotNull { it.normalizedOrNull() }
+
+  private fun List<String>?.toAudienceCampusLabels(rawCampus: String?): List<String> {
+    val normalizedLabels =
+        normalizedTextList().map { if (it == "全部校区") "未指定校区" else it }.distinct()
+    if (normalizedLabels.isNotEmpty()) return normalizedLabels
+    return when (rawCampus.normalizedOrNull()) {
+      "ALL" -> listOf("未指定校区")
+      else -> emptyList()
+    }
+  }
 
   private fun String?.toDtoLocalDateTime(): LocalDateTime? {
     val normalized = normalizedOrNull() ?: return null
