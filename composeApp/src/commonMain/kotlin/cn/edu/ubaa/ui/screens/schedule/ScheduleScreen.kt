@@ -65,11 +65,13 @@ fun ScheduleScreen(
 ) {
   var showWeekSelector by remember { mutableStateOf(false) }
   val currentWeekIndex = weeks.indexOf(selectedWeek)
+  val selectedWeekDateRange = selectedWeek?.dateRangeLabel()
 
   Scaffold(
       topBar = {
         ScheduleTopAppBar(
             title = selectedWeek?.name ?: "选择周次",
+            subtitle = selectedWeekDateRange,
             onNavigateBack = onNavigateBack,
             onPreviousClick = {
               if (currentWeekIndex > 0) onWeekSelected(weeks[currentWeekIndex - 1])
@@ -142,6 +144,7 @@ fun ScheduleScreen(
 @Composable
 private fun ScheduleTopAppBar(
     title: String,
+    subtitle: String?,
     onNavigateBack: () -> Unit,
     onPreviousClick: () -> Unit,
     isPreviousEnabled: Boolean,
@@ -150,14 +153,14 @@ private fun ScheduleTopAppBar(
     onTitleClick: () -> Unit,
 ) {
   CenterAlignedTopAppBar(
-      expandedHeight = 56.dp,
+      expandedHeight = 64.dp,
       navigationIcon = {
         IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
       },
       title = {
-        Row(
+        Column(
             modifier = Modifier.clickable(onClick = onTitleClick),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           Text(
               text = title,
@@ -165,6 +168,15 @@ private fun ScheduleTopAppBar(
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
           )
+          subtitle?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+          }
         }
       },
       actions = {
