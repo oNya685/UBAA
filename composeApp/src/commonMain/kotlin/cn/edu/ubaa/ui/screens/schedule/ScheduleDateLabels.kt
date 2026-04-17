@@ -25,7 +25,7 @@ internal fun Week.headerDayLabels(): List<ScheduleHeaderDayLabel> {
   return defaults.mapIndexed { index, default ->
     ScheduleHeaderDayLabel(
         weekdayLabel = default.weekdayLabel,
-        dateLabel = parsedStart.plus(DatePeriod(days = index)).toMonthDayLabel(),
+        dateLabel = parsedStart.plus(DatePeriod(days = index)).toShortMonthDayLabel(),
     )
   }
 }
@@ -45,6 +45,6 @@ private fun parseWeekBoundaryDate(raw: String?): LocalDate? {
   return runCatching { LocalDate(yearText.toInt(), monthText.toInt(), dayText.toInt()) }.getOrNull()
 }
 
-private fun LocalDate.toMonthDayLabel(): String = "${month.ordinal + 1}月${day}日"
+private fun LocalDate.toShortMonthDayLabel(): String = "${month.ordinal + 1}-${day}"
 
 private val FLEXIBLE_DATE_PATTERN = Regex("""(\d{4})\D+(\d{1,2})\D+(\d{1,2})""")
